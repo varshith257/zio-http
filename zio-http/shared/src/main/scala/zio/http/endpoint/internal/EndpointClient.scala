@@ -22,10 +22,12 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.http._
 import zio.http.codec._
 import zio.http.endpoint._
+import zio.http.Status._
 
 private[endpoint] final case class EndpointClient[P, I, E, O, M <: EndpointMiddleware](
   endpointRoot: URL,
   endpoint: Endpoint[P, I, E, O, M],
+  codecMapping: Map[Int, Codec[Any, Throwable, E]],
 ) {
   def execute(client: Client, invocation: Invocation[P, I, E, O, M])(
     mi: invocation.middleware.In,
@@ -43,30 +45,30 @@ private[endpoint] final case class EndpointClient[P, I, E, O, M <: EndpointMiddl
           Header.Accept(MediaType.application.json, MediaType.parseCustomMediaType("application/protobuf").get),
         )
 
-    client.request(withDefaultAcceptHeader).orDie.flatMap { response =>
-      if (response.status.isSuccess) {
-        endpoint.output.decodeResponse(response).orDie
-      } else {
-        // Preferentially decode an error from the handler, before falling back
-        // to decoding the middleware error:
-        val handlerError =
-          endpoint.error
-            .decodeResponse(response)
-            .map(e => alt.left(e))
-            .mapError(t => new IllegalStateException("Cannot deserialize using endpoint error codec", t))
+    client
+      .request(withDefaultAcceptHeader)
+      .orDie
+      .flatMap { response =>
+        val decoder = if (response.status.isSuccess) {
+          endpoint.output.decodeResponse(response)
+        } else {
+          // Handle errors based on status code using codecMapping
+          val statusCode = response.status.code
+          codecMapping.get(statusCode) match {
+            case Some(codec) =>
+              codec
+                .decodeResponse(response)
+                .mapError(t => new IllegalStateException(s"Cannot decode response for status $statusCode", t))
 
-        val middlewareError =
-          invocation.middleware.error
-            .decodeResponse(response)
-            .map(e => alt.right(e))
-            .mapError(t => new IllegalStateException("Cannot deserialize using middleware error codec", t))
-
-        handlerError.catchAllCause { handlerCause =>
-          middlewareError.catchAllCause { middlewareCause =>
-            ZIO.failCause(handlerCause ++ middlewareCause)
+            case None =>
+              ZIO.fail(new IllegalStateException(s"No codec found for status $statusCode"))
           }
-        }.orDie.flip
+        }
+
+        decoder.orDie
       }
-    }
+      .catchAll { cause =>
+        ZIO.fail(new IllegalStateException("Error decoding response", cause))
+      }
   }
 }
