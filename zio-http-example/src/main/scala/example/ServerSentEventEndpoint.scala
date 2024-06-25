@@ -22,7 +22,7 @@ object ServerSentEventEndpoint extends ZIOAppDefault {
   val app = Routes(
     Method.GET / "sse" -> handler { request =>
       ZIO.succeed(Response(body = ServerSentEventBody(stream, None, MediaType.text.plain)))
-    }
+    },
   ).toHttpApp
 
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] = {
