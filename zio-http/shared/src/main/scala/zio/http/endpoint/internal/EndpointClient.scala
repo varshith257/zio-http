@@ -31,7 +31,7 @@ private[endpoint] final case class EndpointClient[P, I, E, O, M <: EndpointMiddl
 ) {
   def execute(client: Client, invocation: Invocation[P, I, E, O, M])(
     mi: invocation.middleware.In,
-  )(implicit alt: Alternator[E, invocation.middleware.Err], trace: Trace): ZIO[Scope, alt.Out, O] = {
+  )(implicit alt: Alternator[E, invocation.middleware.Err], trace: Trace): ZIO[Scope, E, O] = {
     val request0 = endpoint.input.encodeRequest(invocation.input)
     val request  = request0.copy(url = endpointRoot ++ request0.url)
 
@@ -45,30 +45,14 @@ private[endpoint] final case class EndpointClient[P, I, E, O, M <: EndpointMiddl
           Header.Accept(MediaType.application.json, MediaType.parseCustomMediaType("application/protobuf").get),
         )
 
-    client
-      .request(withDefaultAcceptHeader)
-      .orDie
-      .flatMap { response =>
-        val decoder = if (response.status.isSuccess) {
-          endpoint.output.decodeResponse(response)
-        } else {
-          // Handle errors based on status code using codecMapping
-          val statusCode = response.status.code
-          codecMapping.get(statusCode) match {
-            case Some(codec) =>
-              codec
-                .decodeResponse(response)
-                .mapError(t => new IllegalStateException(s"Cannot decode response for status $statusCode", t))
-
-            case None =>
-              ZIO.fail(new IllegalStateException(s"No codec found for status $statusCode"))
-          }
-        }
-
-        decoder.orDie
+    client.request(withDefaultAcceptHeader).orDie.flatMap { response =>
+      if (endpoint.output.matchesStatus(response.status)) {
+        endpoint.output.decodeResponse(response).orDie
+      } else if (endpoint.error.matchesStatus(response.status)) {
+        endpoint.error.decodeResponse(response).orDie.flip
+      } else {
+        ZIO.die(new IllegalStateException(s"Status code: ${response.status} is not defined in the endpoint"))
       }
-      .catchAll { cause =>
-        ZIO.fail(new IllegalStateException("Error decoding response", cause))
-      }
+    }
   }
 }

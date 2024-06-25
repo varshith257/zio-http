@@ -197,6 +197,7 @@ sealed trait JsonSchema extends Product with Serializable { self =>
 
   def isCollection: Boolean = self match {
     case _: JsonSchema.ArrayType => true
+    case obj: JsonSchema.Object  => obj.properties.isEmpty && obj.additionalProperties.isRight
     case _                       => false
   }
 
@@ -523,6 +524,7 @@ object JsonSchema {
               .map(_.name),
           )
           .deprecated(deprecated(record))
+          .description(record.annotations.collectFirst { case description(value) => value })
       case collection: Schema.Collection[_, _]                                                    =>
         collection match {
           case Schema.Sequence(elementSchema, _, _, _, _) =>
