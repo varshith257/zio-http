@@ -18,12 +18,12 @@ object ServerSentEventEndpoint extends ZIOAppDefault {
   val stream: ZStream[Any, Nothing, ServerSentEvent] =
     ZStream.repeatWithSchedule(ServerSentEvent(ISO_LOCAL_TIME.format(LocalDateTime.now)), Schedule.spaced(1.second))
 
-  val sseEndpoint: Endpoint[Unit, Unit, ZNothing, ZStream[Any, Nothing, ServerSentEvent], None] =
-    Endpoint(Method.GET / "sse").outStream[ServerSentEvent]
-
-  val sseRoute = sseEndpoint.implementHandler(Handler.succeed(stream))
-
-  val routes: Routes[Any, Response] = sseRoute.toRoutes
+  // Define the route that handles SSE
+  val app = Routes(
+    Method.GET / "sse" -> handler { request =>
+      ZIO.succeed(Response(body = ServerSentEventBody(stream, None, MediaType.text.plain)))
+    }
+  ).toHttpApp
 
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] = {
     Server.serve(routes).provide(Server.default).exitCode

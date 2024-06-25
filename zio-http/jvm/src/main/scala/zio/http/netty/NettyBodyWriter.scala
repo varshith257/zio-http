@@ -55,6 +55,17 @@ object NettyBodyWriter {
       }
     }
 
+    def writeServerSentEvent(sse: ServerSentEvent, isLast: Boolean) = {
+      val data = sse.encode
+      val buf = Unpooled.wrappedBuffer(data.getBytes())
+      if (isLast) {
+        ctx.write(buf)
+        ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT)
+      } else {
+        ctx.writeAndFlush(buf)
+      }
+    }
+
     body match {
       case body: ByteBufBody                  =>
         ctx.write(new DefaultHttpContent(body.byteBuf))
@@ -137,3 +148,7 @@ object NettyBodyWriter {
     }
   }
 }
+
+case class ServerSentEventBody(sse: ServerSentEvent, knownContentLength: Option[Long], mediaType: MediaType) extends Body
+
+
