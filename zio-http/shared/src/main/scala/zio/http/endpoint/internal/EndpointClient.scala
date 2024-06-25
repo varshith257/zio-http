@@ -22,12 +22,11 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.http._
 import zio.http.codec._
 import zio.http.endpoint._
-import zio.http.Status._
 
 private[endpoint] final case class EndpointClient[P, I, E, O, M <: EndpointMiddleware](
   endpointRoot: URL,
   endpoint: Endpoint[P, I, E, O, M],
-  codecMapping: Map[Int, Codec[Any, Throwable, E]],
+  codecMapping: Map[Int, Codec[Response, Throwable, E]]
 ) {
   def execute(client: Client, invocation: Invocation[P, I, E, O, M])(
     mi: invocation.middleware.In,
