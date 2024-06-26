@@ -31,8 +31,6 @@ import zio.http.netty.NettyBody.{AsciiStringBody, AsyncBody, UnsafeAsync}
 import io.netty.buffer.Unpooled
 import io.netty.channel._
 import io.netty.handler.codec.http.{DefaultHttpContent, LastHttpContent}
-import io.netty.handler.stream.ChunkedNioFile
-import zio.http.{ServerSentEvent, MediaType}
 
 object NettyBodyWriter {
 
@@ -53,17 +51,6 @@ object NettyBodyWriter {
         ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT)
       } else {
         ctx.writeAndFlush(content)
-      }
-    }
-
-    def writeServerSentEvent(sse: ServerSentEvent, isLast: Boolean) = {
-      val data = sse.encode
-      val buf  = Unpooled.wrappedBuffer(data.getBytes())
-      if (isLast) {
-        ctx.write(buf)
-        ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT)
-      } else {
-        ctx.writeAndFlush(buf)
       }
     }
 
@@ -145,6 +132,3 @@ object NettyBodyWriter {
     }
   }
 }
-
-case class ServerSentEventBody(sse: ServerSentEvent, knownContentLength: Option[Long], mediaType: MediaType)
-    extends Body
