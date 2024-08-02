@@ -2460,21 +2460,15 @@ object OpenAPIGenSpec extends ZIOSpecDefault {
         SwaggerUI.routes("docs/openapi", OpenAPIGen.fromEndpoints(endpoint))
         assertCompletes
       },
-      // test("Ensure OpenAPI generation succeeds for Map[String, List[String]]") {
-      //   val schema        = Schema.map[String, List[String]]
-      //   val openAPISchema = JsonSchema.fromZSchemaMulti(schema, SchemaStyle.Reference)
-      //   assertTrue(openAPISchema != null)
-      // },
+      test("Ensure OpenAPI generation succeeds for Map[String, List[String]]") {
+        val schema        = Schema.map[String, List[String]]
+        val openAPISchema = JsonSchema.fromZSchemaMulti(schema, SchemaStyle.Reference)
+        assertTrue(openAPISchema != null)
+      },
       test("Failing test case for Map[String, List[String]] schema generation") {
         val schema = Schema.map[String, List[String]]
-        val result =
-          try {
-            JsonSchema.fromZSchemaMulti(schema, SchemaStyle.Reference)
-            true
-          } catch {
-            case _: NoSuchElementException => false
-          }
-        assertTrue(result == false)
+        val result = scala.util.Try(JsonSchema.fromZSchemaMulti(schema, SchemaStyle.Reference))
+        assertTrue(result.isFailure)
       },
       test("Recursive schema") {
         val endpoint     = Endpoint(RoutePattern.POST / "folder")
