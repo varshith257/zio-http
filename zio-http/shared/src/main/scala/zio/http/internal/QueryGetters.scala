@@ -104,4 +104,36 @@ trait QueryGetters[+A] { self: QueryOps[A] =>
   def queryParamToOrElse[T](key: String, default: => T)(implicit codec: TextCodec[T]): T =
     queryParamTo[T](key).getOrElse(default)
 
+  /**
+   * Retrieves all typed query parameter values having the specified name using
+   * schema-based decoding.
+   */
+  def queryParamsToSchema[T](key: String)(implicit schema: Schema[T]): Either[QueryParamsError, Chunk[T]] = {
+    val codec = TextCodec.fromSchema[T]
+    queryParamsTo[T](key)(codec)
+  }
+
+  /**
+   * Retrieves all typed query parameter values having the specified name as ZIO
+   * using schema-based decoding.
+   */
+  def queryParamsToSchemaZIO[T](key: String)(implicit schema: Schema[T]): IO[QueryParamsError, Chunk[T]] =
+    ZIO.fromEither(queryParamsToSchema[T](key))
+
+  /**
+   * Retrieves the first typed query parameter value having the specified name
+   * using schema-based decoding.
+   */
+  def queryParamToSchema[T](key: String)(implicit schema: Schema[T]): Either[QueryParamsError, T] = {
+    val codec = TextCodec.fromSchema[T]
+    queryParamTo[T](key)(codec)
+  }
+
+  /**
+   * Retrieves the first typed query parameter value having the specified name
+   * as ZIO using schema-based decoding.
+   */
+  def queryParamToSchemaZIO[T](key: String)(implicit schema: Schema[T]): IO[QueryParamsError, T] =
+    ZIO.fromEither(queryParamToSchema[T](key))
+
 }
