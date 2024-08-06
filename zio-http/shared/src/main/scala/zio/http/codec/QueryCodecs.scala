@@ -16,6 +16,7 @@
 
 package zio.http.codec
 import zio.Chunk
+import zio.schema.Schema
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 
 import zio.schema.Schema
@@ -39,7 +40,11 @@ private[codec] trait QueryCodecs {
 
   def queryAllInt(name: String): QueryCodec[Chunk[Int]] = multiValueCodec(name, Schema[Int])
 
-  def queryAllTo[A](name: String)(implicit codec: Schema[A]): QueryCodec[Chunk[A]] = multiValueCodec(name, codec)
+  def queryAllTo[A](name: String)(implicit codec: TextCodec[A]): QueryCodec[Chunk[A]] = multiValueCodec(name, codec)
+
+  def querySchema[T](name: String)(implicit schema: Schema[T]): QueryCodec[T] = {
+    singleValueCodec(name, TextCodec.fromSchema[T])
+  }
 
   private def singleValueCodec[A](name: String, schema: Schema[A]): QueryCodec[A] =
     HttpCodec

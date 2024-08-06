@@ -20,6 +20,9 @@ import java.util.UUID
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 
+import zio.schema.{Schema, DeriveSchema}
+import zio.schema.codec.JsonCodec
+
 /**
  * A [[zio.http.codec.TextCodec]] defines a codec for a text fragment. The text
  * fragment can be decoded into a value, or the value can be encoded into a text
@@ -58,6 +61,23 @@ object TextCodec {
   implicit val string: TextCodec[String] = StringCodec
 
   implicit val uuid: TextCodec[UUID] = UUIDCodec
+
+  def fromSchema[T](implicit schema: Schema[T]): TextCodec[T] = new TextCodec[T] {
+    override def apply(value: String): T = {
+      JsonCodec.decode(schema, value.getBytes) match {
+        case Left(error)   => throw new MatchError(error.message)
+        case Right(result) => result
+      }
+    }
+
+    override def describe: String = s"schema-based codec for ${schema.toString}"
+
+    override def encode(value: T): String = new String(JsonCodec.encode(schema, value))
+
+    override def isDefinedAt(value: String): Boolean = {
+      JsonCodec.decode(schema, value.getBytes).isRight
+    }
+  }
 
   final case class Constant(string: String) extends TextCodec[Unit] {
 
