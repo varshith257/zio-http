@@ -218,7 +218,7 @@ object HttpCodecSpec extends ZIOHttpSpec {
 
         val decodeAttempt = codec.decodeRequest(request).either
 
-        assert(decodeAttempt)(isLeft(isSubtype[IllegalArgumentException](anything)))
+        assertZIO(decodeAttempt)(isLeft(isSubtype[IllegalArgumentException](anything)))
       },
       test("should merge two codecs correctly") {
         val schema        = Schema[TestData]
