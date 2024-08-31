@@ -14,7 +14,6 @@ import zio.http._
 import zio.http.codec.internal.TextBinaryCodec
 import zio.http.internal.HeaderOps
 import zio.http.template._
-import java.awt.PageAttributes.MediaType
 
 sealed trait HttpContentCodec[A] { self =>
 
