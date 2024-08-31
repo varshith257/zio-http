@@ -14,6 +14,7 @@ import zio.http._
 import zio.http.codec.internal.TextBinaryCodec
 import zio.http.internal.HeaderOps
 import zio.http.template._
+import java.awt.PageAttributes.MediaType
 
 sealed trait HttpContentCodec[A] { self =>
 
@@ -160,6 +161,9 @@ object HttpContentCodec {
     codecs: (MediaType, BinaryCodecWithSchema[A])*,
   ): HttpContentCodec[A] =
     Default(ListMap((codec +: codecs): _*))
+
+  def default[A](choices: ListMap[MediaType, BinaryCodecWithSchema[A]]): HttpContentCodec[A] =
+    Default(choices)
 
   implicit def fromSchema[A](implicit schema: Schema[A]): HttpContentCodec[A] =
     schemaCache
