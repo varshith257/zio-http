@@ -190,15 +190,12 @@ object HttpCodecSpec extends ZIOHttpSpec {
         val codec  = HttpContentCodec.json.only(schema)
         val data   = TestData("ZIO", 42)
 
-        val body    = codec.encode(data).toOption.get
-        val decoded = codec
-          .decodeRequest(
-            Request(
-              body = Body.fromChunk(body),
-              headers = Headers(Header.ContentType(MediaType.application.`json`.fullType)),
-            ),
-          )
-          .either
+        val request = Request(
+          body = body,
+          headers = Headers(Header.ContentType(MediaType.application.json)),
+        )
+
+        val decoded = codec.decodeRequest(request).either
 
         assertTrue(decoded == Right(data))
       },
@@ -215,11 +212,11 @@ object HttpCodecSpec extends ZIOHttpSpec {
         val schema = Schema[TestData]
         val codec  = HttpContentCodec.json.only(schema)
 
-        val decodeAttempt = codec
-          .decodeRequest(
-            headers = Headers(Header.ContentType(MediaType.parseCustomMediaType("application/unsupported").get)),
-          )
-          .either
+        val request = Request(
+          headers = Headers(Header.ContentType(MediaType.parseCustomMediaType("application/unsupported").get)),
+        )
+
+        val decodeAttempt = codec.decodeRequest(request).either
 
         assert(decodeAttempt)(isLeft(isSubtype[IllegalArgumentException](anything)))
       },
