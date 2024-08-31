@@ -20,11 +20,15 @@ import java.util.UUID
 
 import zio._
 import zio.test._
-
 import zio.http._
+import zio.schema._
 
 object HttpCodecSpec extends ZIOHttpSpec {
-  val googleUrl     = URL.decode("http://google.com").toOption.get
+  final case class TestData(name: String, value: Int)
+  object TestData {
+    implicit val schema: Schema[TestData] = DeriveSchema.gen[TestData]
+  }
+  val googleUrl = URL.decode("http://google.com").toOption.get
   val usersUrl      = URL.decode("http://mywebservice.com/users").toOption.get
   val usersIdUrl    = URL.decode("http://mywebservice.com/users/42").toOption.get
   val postURL       = URL.decode("http://mywebservice.com/users/42/post").toOption.get
