@@ -200,38 +200,6 @@ object HttpContentCodec {
       )
   }
 
-  object json {
-
-    def only[A](implicit schema: Schema[A]): HttpContentCodec[A] =
-      fromSingleCodec(
-        MediaType.application.`json`,
-        JsonCodec.schemaBasedBinaryCodec[A](JsonCodec.Config())(schema),
-        schema
-      )
-  }
-
-  object protobuf {
-
-    def only[A](implicit schema: Schema[A]): HttpContentCodec[A] =
-      fromSingleCodec(
-        MediaType.parseCustomMediaType("application/protobuf").get,
-        ProtobufCodec.protobufCodec[A],
-        schema
-      )
-  }
-
-  object text {
-
-    def only[A](implicit schema: Schema[A]): HttpContentCodec[A] =
-      fromMultipleCodecs(
-        List(
-          MediaType.text.`plain`               -> TextBinaryCodec.fromSchema(schema),
-          MediaType.application.`octet-stream` -> TextBinaryCodec.fromSchema(schema)
-        ),
-        schema
-      )
-  }
-
   private def fromSingleCodec[A](mediaType: MediaType, codec: BinaryCodec[A], schema: Schema[A]) =
     Default(ListMap(mediaType -> BinaryCodecWithSchema(codec, schema)))
 
@@ -324,7 +292,7 @@ object HttpContentCodec {
   object json {
 
     def only[A](implicit schema: Schema[A]): HttpContentCodec[A] =
-      HttpContentCodec(
+      Default(
         ListMap(
           MediaType.application.`json` ->
             BinaryCodecWithSchema(
@@ -341,7 +309,7 @@ object HttpContentCodec {
   object protobuf {
 
     def only[A](implicit schema: Schema[A]): HttpContentCodec[A] =
-      HttpContentCodec(
+      Default(
         ListMap(
           MediaType.parseCustomMediaType("application/protobuf").get ->
             BinaryCodecWithSchema(ProtobufCodec.protobufCodec[A], schema)
@@ -352,7 +320,7 @@ object HttpContentCodec {
   object text {
 
     def only[A](implicit schema: Schema[A]): HttpContentCodec[A] =
-      HttpContentCodec(
+      Default(
         ListMap(
           MediaType.text.`plain` ->
             BinaryCodecWithSchema(zio.http.codec.internal.TextBinaryCodec.fromSchema[A](schema), schema),
@@ -360,6 +328,7 @@ object HttpContentCodec {
             BinaryCodecWithSchema(zio.http.codec.internal.TextBinaryCodec.fromSchema[A](schema), schema)
         )
       )
+
   }
 
   private val ByteChunkBinaryCodec: BinaryCodec[Chunk[Byte]] = new BinaryCodec[Chunk[Byte]] {
