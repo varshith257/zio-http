@@ -25,7 +25,7 @@ sealed trait HttpContentCodec[A] { self =>
    * A right biased merge of two HttpContentCodecs.
    */
   def ++(that: HttpContentCodec[A]): HttpContentCodec[A] =
-    Default(choices ++ that.choices)
+    HttpContentCodec.Default(choices ++ that.choices)
 
   def decodeRequest(request: Request, config: CodecConfig): Task[A] = {
     val contentType = mediaTypeFromContentTypeHeader(request)
@@ -77,7 +77,7 @@ sealed trait HttpContentCodec[A] { self =>
     }
 
   def only(mediaType: MediaType): HttpContentCodec[A] =
-    Filtered(this, mediaType)
+    HttpContentCodec.Filtered(this, mediaType)
 
   def only(mediaType: Option[MediaType]): HttpContentCodec[A] =
     mediaType.map(only).getOrElse(self)
@@ -163,7 +163,7 @@ object HttpContentCodec {
 
   implicit def fromSchema[A](implicit schema: Schema[A]): HttpContentCodec[A] =
     schemaCache
-      .getOrElseUpdate(schema, _ => json.only[A] ++ protobuf.only[A] ++ text.only[A])
+      .getOrElseUpdate(schema, _: Schema[A] => json.only[A] ++ protobuf.only[A] ++ text.only[A])
       .asInstanceOf[HttpContentCodec[A]]
 
   final private case class Default[A](
