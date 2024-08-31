@@ -180,6 +180,57 @@ object HttpCodecSpec extends ZIOHttpSpec {
           )
         }
       },
-  )
+    suite("HttpContentCodec")(
+      test("should encode and decode JSON correctly") {
+        val schema = DeriveSchema.gen[TestData]
+        val codec  = HttpContentCodec.json.only(schema)
+        val data   = TestData("ZIO", 42)
 
+        val body    = codec.encode(data).toOption.get
+        val decoded = codec
+          .decodeRequest(
+            Request(
+              body = Body.fromChunk(body.data),
+              headers = Headers(Header.ContentType(MediaType.application.`json`.fullType)),
+            ),
+          )
+          .either
+
+        assertTrue(decoded == Right(data))
+      },
+      test("should cache codecs correctly") {
+        val schema = DeriveSchema.gen[TestData]
+        val codec  = HttpContentCodec.json.only(schema)
+
+        val firstLookup  = codec.lookup(MediaType.application.`json`)
+        val secondLookup = codec.lookup(MediaType.application.`json`)
+
+        assertTrue(firstLookup == secondLookup) &&
+        assertTrue(codec.lookupCache.size == 1)
+      },
+      test("should handle unsupported media type") {
+        val schema = DeriveSchema.gen[TestData]
+        val codec  = HttpContentCodec.json.only(schema)
+
+        val decodeAttempt = codec
+          .decodeRequest(
+            Request(headers = Headers(Header.ContentType("application/unsupported"))),
+          )
+          .either
+
+        assert(decodeAttempt)(isLeft(isSubtype[IllegalArgumentException](anything)))
+      },
+      test("should merge two codecs correctly") {
+        val schema        = DeriveSchema.gen[TestData]
+        val jsonCodec     = HttpContentCodec.json.only(schema)
+        val protobufCodec = HttpContentCodec.protobuf.only(schema)
+
+        val mergedCodec = jsonCodec ++ protobufCodec
+
+        assertTrue(mergedCodec.choices.size == 2) &&
+        assertTrue(mergedCodec.lookup(MediaType.application.`json`).isDefined) &&
+        assertTrue(mergedCodec.lookup(MediaType.parseCustomMediaType("application/protobuf").get).isDefined)
+      },
+    ),
+  )
 }
