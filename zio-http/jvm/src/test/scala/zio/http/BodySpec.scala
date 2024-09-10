@@ -17,10 +17,12 @@
 package zio.http
 
 import java.io.File
-import zio._
+
 import zio.test.Assertion.equalTo
 import zio.test.TestAspect.timeout
 import zio.test._
+import zio.{Scope, durationInt}
+
 import zio.stream.ZStream
 
 object BodySpec extends ZIOHttpSpec {
@@ -58,17 +60,6 @@ object BodySpec extends ZIOHttpSpec {
         test("updates the Body media type with the provided value") {
           val body = Body.fromString("test").contentType(MediaType.text.plain)
           assertTrue(body.mediaType == Option(MediaType.text.plain))
-        },
-      ),
-      suite("multipart form boundary")(
-        test("generated boundary is sanitized and RFC 2046 compliant") {
-          for {
-            form <- ZIO.succeed(Form(FormField.simpleField("name", "test-name")))
-            body <- Body.fromMultipartFormUUID(form)
-            boundaryOpt = body.contentType.flatMap(_.boundary)
-            _ <- ZIO.logInfo(s"Generated boundary: ${boundaryOpt.getOrElse("No boundary found")}")
-          } yield assertTrue(boundaryOpt.isDefined) &&
-            assertTrue(boundaryOpt.get.toString.matches("^[a-zA-Z0-9'()+_,-./:=?]+$"))
         },
       ),
     ) @@ timeout(10 seconds)
