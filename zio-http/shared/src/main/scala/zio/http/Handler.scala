@@ -51,13 +51,23 @@ sealed trait Handler[-R, +Err, -In, +Out] { self =>
     err: Err <:< Response,
     trace: Trace,
     tag: Tag[Ctx],
-  ): Handler[Env0, Response, Request, Response] =
-    aspect.applyHandlerContext {
-      handler { (ctx: Ctx, req: Request) =>
-        val handler: ZIO[Ctx, Response, Response] = self.asInstanceOf[Handler[Ctx, Response, Request, Response]](req)
-        handler.provideSomeEnvironment[Env0](_.add[Ctx](ctx))
+  ): Handler[Env0, Response, Request, Response] = {
+    if (isScala2 && isIntersectionType[Ctx]) {
+      convertToTupleHandler(aspect.applyHandlerContext {
+        handler { (ctx: Ctx, req: Request) =>
+          val handler: ZIO[Ctx, Response, Response] = self.asInstanceOf[Handler[Ctx, Response, Request, Response]](req)
+          handler.provideSomeEnvironment[Env0](_.add[Ctx](ctx))
+        }
+      })
+    } else {
+      aspect.applyHandlerContext {
+        handler { (ctx: Ctx, req: Request) =>
+          val handler: ZIO[Ctx, Response, Response] = self.asInstanceOf[Handler[Ctx, Response, Request, Response]](req)
+          handler.provideSomeEnvironment[Env0](_.add[Ctx](ctx))
+        }
       }
     }
+  }
 
   def @@[Env0]: ApplyContextAspect[R, Err, In, Out, Env0] =
     new ApplyContextAspect(self)
@@ -257,6 +267,10 @@ sealed trait Handler[-R, +Err, -In, +Out] { self =>
   final def contraFlatMap[In1]: Handler.ContraFlatMap[R, Err, In, Out, In1] =
     new Handler.ContraFlatMap(self)
 
+  def convertToTupleHandler[Env](handler: Handler[Env, _, _, _]): Handler[_, _, _, _] = {
+    handler.asInstanceOf[Handler[(Any, Any), _, _, _]]
+  }
+
   /**
    * Delays production of output B for the specified duration of time
    */
@@ -336,6 +350,15 @@ sealed trait Handler[-R, +Err, -In, +Out] { self =>
     trace: Trace,
   ): Handler[R, Err, In, Option[headerType.HeaderValue]] =
     self.headers.map(_.get(headerType))
+
+  def isScala2: Boolean = util.Properties.versionNumberString.startsWith("2.")
+
+  def isIntersectionType[T](implicit tag: Tag[T]): Boolean = {
+    tag.tag match {
+      case t if t.toString.contains("with") => true // Intersection types in Scala 2 use "with"
+      case _                                => false
+    }
+  }
 
   /**
    * Transforms the output of the handler

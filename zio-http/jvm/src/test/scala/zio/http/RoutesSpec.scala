@@ -23,6 +23,19 @@ import zio.http.codec.PathCodec
 object RoutesSpec extends ZIOHttpSpec {
   def extractStatus(response: Response): Status = response.status
 
+  val authContext: HandlerAspect[Any, String] = HandlerAspect.customAuthProviding[String] { request =>
+    request.headers.get(Header.Authorization).flatMap {
+      case Header.Authorization.Basic(uname, secret) if uname.reverse == secret.value.mkString =>
+        Some(uname)
+      case _                                                                                   =>
+        None
+    }
+  }
+
+  val endpoint = Endpoint(RoutePattern.GET / "test")
+    .outCodec[String](StatusCodec.Ok ++ HttpCodec.content[String])
+    .auth(AuthType.Basic)
+
   def spec = suite("RoutesSpec")(
     test("empty not found") {
       val app = Routes.empty
@@ -107,6 +120,15 @@ object RoutesSpec extends ZIOHttpSpec {
           extractStatus(box) == Status.NotFound,
         )
       }
+    },
+    test("HandlerAspect works with Routes with multiple dependencies") {
+      val routeWithMultipleDependencies: Route[Int & Long & String, Nothing] =
+        endpoint.implement((_: Unit) => ZIO.service[Int].zip(ZIO.service[Long]).map(_ => "multiple-dependencies"))
+
+      val routesWithAspect: Routes[(Int, Long), Nothing] =
+        Routes(routeWithMultipleDependencies).@@[(Int, Long)](authContext)
+
+      assertTrue(routesWithAspect != null)
     },
   )
 }

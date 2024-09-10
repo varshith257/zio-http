@@ -41,8 +41,14 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
 
   def @@[Env0, Ctx <: Env](
     aspect: HandlerAspect[Env0, Ctx],
-  )(implicit tag: Tag[Ctx]): Routes[Env0, Err] =
-    self.transform(_ @@ aspect)
+  )(implicit tag: Tag[Ctx]): Routes[Env0, Err] = {
+    val updatedRoutes = if (isScala2 && isIntersectionType[Ctx]) {
+      convertToTuple(self.transform(_ @@ aspect))
+    } else {
+      self.transform(_ @@ aspect)
+    }
+    updatedRoutes
+  }
 
   def @@[Env0]: ApplyContextAspect[Env, Err, Env0] =
     new ApplyContextAspect[Env, Err, Env0](self)
@@ -103,6 +109,19 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
    */
   def handleErrorCauseZIO(f: Cause[Err] => ZIO[Any, Nothing, Response])(implicit trace: Trace): Routes[Env, Nothing] =
     new Routes(routes.map(_.handleErrorCauseZIO(f)))
+
+  def isScala2: Boolean = util.Properties.versionNumberString.startsWith("2.")
+
+  def isIntersectionType[T](implicit tag: Tag[T]): Boolean = {
+    tag.tag match {
+      case t if t.toString.contains("with") => true
+      case _                                => false
+    }
+  }
+
+  def convertToTuple[Env](routes: Routes[Env, _]): Routes[_, _] = {
+    routes.asInstanceOf[Routes[(Any, Any), _]]
+  }
 
   /**
    * Allows the transformation of the Err type through an Effectful program
