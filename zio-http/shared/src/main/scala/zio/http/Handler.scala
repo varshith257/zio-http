@@ -53,17 +53,20 @@ sealed trait Handler[-R, +Err, -In, +Out] { self =>
     tag: Tag[Ctx],
   ): Handler[Env0, Response, Request, Response] = {
     if (isScala2 && isIntersectionType[Ctx]) {
-      convertToTupleHandler(aspect.applyHandlerContext {
+      val handlerWithAspect = aspect.applyHandlerContext {
         handler { (ctx: Ctx, req: Request) =>
-          val handler: ZIO[Ctx, Response, Response] = self.asInstanceOf[Handler[Ctx, Response, Request, Response]](req)
-          handler.provideSomeEnvironment[Env0](_.add[Ctx](ctx))
+          val typedHandler: ZIO[Ctx, Response, Response] =
+            self.asInstanceOf[Handler[Ctx, Response, Request, Response]](req)
+          typedHandler.provideSomeEnvironment[Env0](_.add[Ctx](ctx))
         }
-      })
+      }
+      convertToTupleHandler(handlerWithAspect.asInstanceOf[Handler[Env0, Response, Request, Response]])
     } else {
       aspect.applyHandlerContext {
         handler { (ctx: Ctx, req: Request) =>
-          val handler: ZIO[Ctx, Response, Response] = self.asInstanceOf[Handler[Ctx, Response, Request, Response]](req)
-          handler.provideSomeEnvironment[Env0](_.add[Ctx](ctx))
+          val typedHandler: ZIO[Ctx, Response, Response] =
+            self.asInstanceOf[Handler[Ctx, Response, Request, Response]](req)
+          typedHandler.provideSomeEnvironment[Env0](_.add[Ctx](ctx))
         }
       }
     }
