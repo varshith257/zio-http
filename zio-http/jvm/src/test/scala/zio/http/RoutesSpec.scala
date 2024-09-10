@@ -120,7 +120,7 @@ object RoutesSpec extends ZIOHttpSpec {
       }
     },
     test("HandlerAspect works with multiple dependencies in Scala 2") {
-      val routeWithMultipleDeps = Method.GET / "multiple-deps" -> handler { _: Request =>
+      val routeWithMultipleDeps = Method.GET / "multiple-deps" -> handler { (_: Request) =>
         for {
           intDep  <- ZIO.service[Int]
           longDep <- ZIO.service[Long]
