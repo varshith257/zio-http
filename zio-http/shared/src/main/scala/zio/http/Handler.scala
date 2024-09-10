@@ -270,8 +270,10 @@ sealed trait Handler[-R, +Err, -In, +Out] { self =>
   final def contraFlatMap[In1]: Handler.ContraFlatMap[R, Err, In, Out, In1] =
     new Handler.ContraFlatMap(self)
 
-  def convertToTupleHandler[Env](handler: Handler[Env, _, _, _]): Handler[_, _, _, _] = {
-    handler.asInstanceOf[Handler[(Any, Any), _, _, _]]
+  def convertToTupleHandler[Env](
+    handler: Handler[Env, Response, Request, Response],
+  ): Handler[(Any, Any), Response, Request, Response] = {
+    handler.asInstanceOf[Handler[(Any, Any), Response, Request, Response]]
   }
 
   /**
