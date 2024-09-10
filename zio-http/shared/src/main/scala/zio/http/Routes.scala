@@ -39,15 +39,12 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
   def @@[Env0](aspect: HandlerAspect[Env0, Unit]): Routes[Env with Env0, Err] =
     aspect(self)
 
-  def @@[Env0, Ctx <: Env](
-    aspect: HandlerAspect[Env0, Ctx],
-  )(implicit tag: Tag[Ctx]): Routes[Env0, Err] = {
-    val updatedRoutes = if (isScala2 && isIntersectionType[Ctx]) {
-      convertToTuple(self.transform(_ @@ aspect))
+  def @@[Env0, Ctx <: Env](aspect: HandlerAspect[Env0, Ctx])(implicit tag: Tag[Ctx]): Routes[Env0, Err] = {
+    if (isScala2 && isIntersectionType[Ctx]) {
+      self.transform(_ @@ aspect).asInstanceOf[Routes[Env0, Err]]
     } else {
       self.transform(_ @@ aspect)
     }
-    updatedRoutes
   }
 
   def @@[Env0]: ApplyContextAspect[Env, Err, Env0] =
