@@ -32,10 +32,6 @@ object RoutesSpec extends ZIOHttpSpec {
     }
   }
 
-  val endpoint = Endpoint(RoutePattern.GET / "test")
-    .outCodec[String](StatusCodec.Ok ++ HttpCodec.content[String])
-    .auth(AuthType.Basic)
-
   def spec = suite("RoutesSpec")(
     test("empty not found") {
       val app = Routes.empty
@@ -121,14 +117,21 @@ object RoutesSpec extends ZIOHttpSpec {
         )
       }
     },
-    test("HandlerAspect works with Routes with multiple dependencies") {
-      val routeWithMultipleDependencies: Route[Int & Long & String, Nothing] =
-        endpoint.implement((_: Unit) => ZIO.service[Int].zip(ZIO.service[Long]).map(_ => "multiple-dependencies"))
+    test("HandlerAspect works with multiple dependencies in Scala 2") {
+      val routeWithMultipleDeps = Method.GET / "multiple-deps" -> handler { _: Request =>
+        for {
+          intDep  <- ZIO.service[Int]
+          longDep <- ZIO.service[Long]
+        } yield Response.text(s"Int: $intDep, Long: $longDep")
+      }
 
-      val routesWithAspect: Routes[(Int, Long), Nothing] =
-        Routes(routeWithMultipleDependencies).@@[(Int, Long)](authContext)
+      val routesWithAspect = Routes(routeWithMultipleDeps).@@[Int with Long](authContext)
 
-      assertTrue(routesWithAspect != null)
+      for {
+        result <- routesWithAspect
+          .runZIO(Request.get("/multiple-deps"))
+          .provideLayer(ZLayer.succeed(42) ++ ZLayer.succeed(100L))
+      } yield assertTrue(result.status == Status.Ok && result.body.asString == "Int: 42, Long: 100")
     },
   )
 }
