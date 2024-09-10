@@ -107,6 +107,15 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
   def handleErrorCauseZIO(f: Cause[Err] => ZIO[Any, Nothing, Response])(implicit trace: Trace): Routes[Env, Nothing] =
     new Routes(routes.map(_.handleErrorCauseZIO(f)))
 
+  def isScala2: Boolean = util.Properties.versionNumberString.startsWith("2.")
+
+  def isIntersectionType[T](implicit tag: Tag[T]): Boolean = {
+    tag.tag match {
+      case t if t.toString.contains("with") => true
+      case _                                => false
+    }
+  }
+
   /**
    * Allows the transformation of the Err type through an Effectful program
    * allowing one to build up Routes in Stages delegates to the Route.
