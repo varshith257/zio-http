@@ -127,7 +127,8 @@ object RoutesSpec extends ZIOHttpSpec {
         } yield Response.text(s"Int: $intDep, Long: $longDep")
       }
 
-      val routesWithAspect = Routes(routeWithMultipleDeps).applyHandlerAspect[Int with Long](authContext)
+        val routesWithAspect = (Routes(routeWithMultipleDeps): Routes[Int with Long, Nothing])
+    .@@[Int with Long](authContext)
 
 
       for {
