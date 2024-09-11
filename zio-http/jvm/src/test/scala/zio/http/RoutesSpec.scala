@@ -125,12 +125,14 @@ object RoutesSpec extends ZIOHttpSpec {
         long <- ZIO.service[Long]
       } yield s"Int: $int, Long: $long"
 
-      val route: Route[Int & Long, Nothing] =
-        RoutePattern(Method.GET, Path.root).toHandler(routeWithMultipleDeps)
+      val handler: Handler[Int & Long, Nothing, Request, Response] =
+        Handler.fromZIO(routeWithMultipleDeps.map(result => Response.text(result)))
+
+      val route: Route[Int & Long, Nothing] = RoutePattern(Method.GET, Path.root) -> handler
 
       val routes       = Routes(route)
       val env          = ZEnvironment(42).add(100L)
-      val expectedBody = "\"Int: 42, Long: 100\""
+      val expectedBody = "Int: 42, Long: 100"
       for {
         response   <- routes
           .provideEnvironment(env)
