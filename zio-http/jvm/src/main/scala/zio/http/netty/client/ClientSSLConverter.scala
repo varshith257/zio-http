@@ -34,7 +34,7 @@ private[netty] object ClientSSLConverter {
   private def keyManagerTrustManagerToSslContext(
     keyManagerInfo: Option[(String, InputStream, Option[Secret])],
     trustManagerInfo: Option[(String, InputStream, Option[Secret])],
-  sslContextBuilder: SslContextBuilder
+    sslContextBuilder: SslContextBuilder,
   ): SslContextBuilder = {
     val mkeyManagerFactory =
       keyManagerInfo.map { case (keyStoreType, inputStream, maybePassword) =>
@@ -145,7 +145,7 @@ private[netty] object ClientSSLConverter {
           case ClientSSLConfig.FromJavaxNetSsl.Empty          => None
         }
 
-      keyManagerTrustManagerToSslContext(keyManagerInfo, trustManagerInfo)
+      keyManagerTrustManagerToSslContext(keyManagerInfo, trustManagerInfo, sslContextBuilder)
   }
 
   def toNettySSLContext(sslConfig: ClientSSLConfig): SslContext = {
