@@ -34,7 +34,8 @@ private[netty] object ClientSSLConverter {
   private def keyManagerTrustManagerToSslContext(
     keyManagerInfo: Option[(String, InputStream, Option[Secret])],
     trustManagerInfo: Option[(String, InputStream, Option[Secret])],
-  ): SslContext = {
+  sslContextBuilder: SslContextBuilder
+  ): SslContextBuilder = {
     val mkeyManagerFactory =
       keyManagerInfo.map { case (keyStoreType, inputStream, maybePassword) =>
         val keyStore          = KeyStore.getInstance(keyStoreType)
@@ -60,7 +61,7 @@ private[netty] object ClientSSLConverter {
     var bldr = SslContextBuilder.forClient()
     mkeyManagerFactory.foreach(kmf => bldr = bldr.keyManager(kmf))
     mtrustManagerFactory.foreach(tmf => bldr = bldr.trustManager(tmf))
-    bldr.build()
+    bldr
   }
 
   private def trustStoreToSslContext(
