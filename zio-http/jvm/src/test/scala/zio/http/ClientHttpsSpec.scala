@@ -92,7 +92,7 @@ object ClientHttpsFromJavaxNetSslSpec extends ClientHttpsSpecBase {
 
   val sslConfig =
     ClientSSLConfig.FromJavaxNetSsl
-      .builderWithTrustManagerFile("trustStore.jsk")
+      .builderWithTrustManagerFile("trustStore.jks")
       .trustManagerPassword("changeit")
       .build()
 }
