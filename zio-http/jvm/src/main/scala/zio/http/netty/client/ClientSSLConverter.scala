@@ -30,7 +30,7 @@ import zio.http.ClientSSLConfig
 
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import io.netty.handler.ssl.{SslContext, SslContextBuilder}
-object ClientSSLConverter {
+private[netty] object ClientSSLConverter {
   private def keyManagerTrustManagerToSslContext(
     keyManagerInfo: Option[(String, InputStream, Option[Secret])],
     trustManagerInfo: Option[(String, InputStream, Option[Secret])],
@@ -63,7 +63,6 @@ object ClientSSLConverter {
     bldr.build()
   }
 
-private[netty] object ClientSSLConverter {
   private def trustStoreToSslContext(
     trustStoreStream: InputStream,
     trustStorePassword: Secret,
