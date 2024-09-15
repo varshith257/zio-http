@@ -1,21 +1,18 @@
 package zio.http.endpoint.openapi
 
 import scala.annotation.{nowarn, tailrec}
-import scala.util.chaining.scalaUtilChainingOps
 
 import zio._
 import zio.json.ast.Json
 
 import zio.schema.Schema.CaseClass0
-import zio.schema.StandardType.Tags
 import zio.schema._
 import zio.schema.annotation._
 import zio.schema.codec._
 import zio.schema.codec.json._
 import zio.schema.validation._
 
-import zio.http.codec.{PathCodec, SegmentCodec, TextCodec}
-import zio.http.endpoint.openapi.BoolOrSchema.SchemaWrapper
+import zio.http.codec._
 import zio.http.endpoint.openapi.JsonSchema.MetaData
 
 @nowarn("msg=possible missing interpolator")
@@ -151,9 +148,9 @@ final case class JsonSchemas(
 
 sealed trait JsonSchema extends Product with Serializable { self =>
 
-  lazy val toJsonBytes: Chunk[Byte] = JsonCodec.schemaBasedBinaryCodec[JsonSchema].encode(self)
+  def toJsonBytes: Chunk[Byte] = JsonCodec.schemaBasedBinaryCodec[JsonSchema].encode(self)
 
-  lazy val toJson: String = toJsonBytes.asString
+  def toJson: String = toJsonBytes.asString
 
   protected[openapi] def toSerializableSchema: SerializableJsonSchema
   def annotate(annotations: Chunk[JsonSchema.MetaData]): JsonSchema =
@@ -659,7 +656,7 @@ object JsonSchema {
               .map(_.name),
           )
           .deprecated(deprecated(record))
-          .description(record.annotations.collectFirst { case description(value) => value })
+          .description(descriptionFromAnnotations(record.annotations))
       case collection: Schema.Collection[_, _]                                                    =>
         collection match {
           case Schema.Sequence(elementSchema, _, _, _, _)                =>
@@ -764,6 +761,18 @@ object JsonSchema {
 
     }
 
+  private def descriptionFromAnnotations(annotations: Chunk[Any]) = {
+    def sanitize(str: java.lang.String): java.lang.String =
+      str.linesIterator
+        .map(_.trim.stripPrefix("/**").stripPrefix("/*").stripSuffix("*/").stripPrefix("*").trim)
+        .filterNot(l => l == "\n" || l == "")
+        .mkString("\n")
+    annotations.collectFirst {
+      case description(value) if value.trim.startsWith("/*") => sanitize(value)
+      case description(value)                                => value
+    }
+  }
+
   sealed trait SchemaStyle extends Product with Serializable
   object SchemaStyle {
 
@@ -792,7 +801,7 @@ object JsonSchema {
     schema.annotations.exists(_.isInstanceOf[scala.deprecated])
 
   private def fieldDoc(schema: Schema.Field[_, _]): Option[java.lang.String] = {
-    val description0 = schema.annotations.collectFirst { case description(value) => value }
+    val description0 = descriptionFromAnnotations(schema.annotations)
     val defaultValue = schema.annotations.collectFirst { case fieldDefaultValue(value) => value }.map { _ =>
       s"${if (description0.isDefined) "\n" else ""}If not set, this field defaults to the value of the default annotation."
     }

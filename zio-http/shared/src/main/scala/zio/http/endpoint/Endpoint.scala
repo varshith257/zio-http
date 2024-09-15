@@ -23,11 +23,10 @@ import zio._
 
 import zio.stream.ZStream
 
-import zio.schema._
+import zio.schema.Schema
 
 import zio.http.Header.Accept.MediaTypeWithQFactor
 import zio.http._
-import zio.http.codec.HttpCodecType.{RequestType, ResponseType}
 import zio.http.codec._
 import zio.http.endpoint.Endpoint.{OutErrors, defaultMediaTypes}
 
@@ -245,6 +244,11 @@ final case class Endpoint[PathInput, Input, Err, Output, Auth <: AuthType](
   ): Route[Any, Nothing] =
     implementHandler[Any](Handler.succeed(output))
 
+  def implementAsZIO(output: ZIO[Any, Err, Output])(implicit
+    trace: Trace,
+  ): Route[Any, Nothing] =
+    implementHandler[Any](Handler.fromZIO(output))
+
   def implementAsError(err: Err)(implicit
     trace: Trace,
   ): Route[Any, Nothing] =
@@ -253,7 +257,7 @@ final case class Endpoint[PathInput, Input, Err, Output, Auth <: AuthType](
   def implementHandler[Env](original: Handler[Env, Err, Input, Output])(implicit trace: Trace): Route[Env, Nothing] = {
     import HttpCodecError.asHttpCodecError
 
-    def authCodec(authType: AuthType): HttpCodec[RequestType, Unit] = authType match {
+    def authCodec(authType: AuthType): HttpCodec[HttpCodecType.RequestType, Unit] = authType match {
       case AuthType.None                => HttpCodec.empty
       case AuthType.Basic               =>
         HeaderCodec.authorization.transformOrFail {
@@ -356,7 +360,7 @@ final case class Endpoint[PathInput, Input, Err, Output, Auth <: AuthType](
           }
       }
 
-    Route.handled(self.route)(handler)
+    Route.handledIgnoreParams(self.route)(handler)
   }
 
   /**
@@ -618,6 +622,15 @@ final case class Endpoint[PathInput, Input, Err, Output, Auth <: AuthType](
     )
 
   /**
+   * Returns a new endpoint derived from this one, whose response must satisfy
+   * the specified codec.
+   */
+  def outCodec[Output2](codec: HttpCodec[HttpCodecType.ResponseType, Output2])(implicit
+    alt: Alternator[Output2, Output],
+  ): Endpoint[PathInput, Input, Err, alt.Out, Auth] =
+    copy(output = codec | self.output)
+
+  /**
    * Converts a codec error into a specific error type. The given media types
    * are sorted by q-factor. Beginning with the highest q-factor.
    */
@@ -650,14 +663,10 @@ final case class Endpoint[PathInput, Input, Err, Output, Auth <: AuthType](
 
   def outErrors[Err2]: OutErrors[PathInput, Input, Err, Output, Auth, Err2] = OutErrors(self)
 
-  /**
-   * Returns a new endpoint derived from this one, whose response must satisfy
-   * the specified codec.
-   */
-  def outCodec[Output2](codec: HttpCodec[HttpCodecType.ResponseType, Output2])(implicit
-    alt: Alternator[Output2, Output],
-  ): Endpoint[PathInput, Input, Err, alt.Out, Auth] =
-    copy(output = codec | self.output)
+  def outHeader[A](codec: HeaderCodec[A])(implicit
+    combiner: Combiner[Output, A],
+  ): Endpoint[PathInput, Input, Err, combiner.Out, Auth] =
+    copy(output = self.output ++ codec)
 
   /**
    * Returns a new endpoint derived from this one, whose output type is a stream
@@ -794,7 +803,7 @@ final case class Endpoint[PathInput, Input, Err, Output, Auth <: AuthType](
     copy(input = self.input ++ codec)
 
   /**
-   * Adds tags to the endpoint. The are used for documentation generation. For
+   * Adds tags to the endpoint. They are used for documentation generation. For
    * example to group endpoints for OpenAPI.
    */
   def tag(tag: String, tags: String*): Endpoint[PathInput, Input, Err, Output, Auth] =

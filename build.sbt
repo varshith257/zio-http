@@ -33,6 +33,13 @@ ThisBuild / githubWorkflowAddedJobs    :=
       steps = List(WorkflowStep.Use(UseRef.Public("release-drafter", "release-drafter", s"v${releaseDrafterVersion}"))),
       cond = Option("${{ github.base_ref == 'main' }}"),
     ),
+    WorkflowJob(
+      id = "mima_check",
+      name = "Mima Check",
+      steps = WorkflowStep.CheckoutFull +: WorkflowStep.SetupJava(List(JavaSpec.temurin("21"))) :+  WorkflowStep.Sbt(List("mimaChecks")),
+      cond = Option("${{ github.event_name == 'pull_request' }}"),
+      javas = List(JavaSpec.temurin("21")),
+    ),
   ) ++ ScoverageWorkFlow(50, 60) ++ JmhBenchmarkWorkflow(1) ++ BenchmarkWorkFlow()
 
 ThisBuild / githubWorkflowTargetTags ++= Seq("v*")
@@ -176,6 +183,7 @@ lazy val zioHttp = crossProject(JSPlatform, JVMPlatform)
     },
     libraryDependencies ++= netty ++ Seq(`netty-incubator`),
   )
+  .jvmSettings(MimaSettings.mimaSettings(failOnProblem = true))
   .jsSettings(
     ThisProject / fork := false,
     testFrameworks     := Seq(new TestFramework("zio.test.sbt.ZTestFramework")),
@@ -274,6 +282,7 @@ lazy val zioHttpHtmx = (project in file("zio-http-htmx"))
     ),
   )
   .dependsOn(zioHttpJVM)
+  .settings(MimaSettings.mimaSettings(failOnProblem = true))
 
 lazy val zioHttpExample = (project in file("zio-http-example"))
   .settings(stdSettings("zio-http-example"))
@@ -281,10 +290,12 @@ lazy val zioHttpExample = (project in file("zio-http-example"))
   .settings(runSettings(Debug.Main))
   .settings(libraryDependencies ++= Seq(`jwt-core`, `zio-schema-json`))
   .settings(
+    run / fork := true,
+    run / javaOptions ++= Seq("-Xms4G", "-Xmx4G", "-XX:+UseG1GC"),
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio-config"                        % ZioConfigVersion,
-      "dev.zio" %% "zio-config-typesafe"               % ZioConfigVersion,
-      "dev.zio" %% "zio-config-magnolia"               % ZioConfigVersion,
+      `zio-config`,
+      `zio-config-magnolia`,
+      `zio-config-typesafe`,
       "dev.zio" %% "zio-metrics-connectors"            % "2.3.1",
       "dev.zio" %% "zio-metrics-connectors-prometheus" % "2.3.1",
     ),
@@ -305,6 +316,7 @@ lazy val zioHttpGen = (project in file("zio-http-gen"))
       `zio`,
       `zio-test`,
       `zio-test-sbt`,
+      `zio-config`,
       scalafmt.cross(CrossVersion.for3Use2_13),
       scalametaParsers
         .cross(CrossVersion.for3Use2_13)
@@ -403,10 +415,10 @@ lazy val docs = project
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework"),
     libraryDependencies ++= Seq(
       `jwt-core`,
-      "dev.zio" %% "zio-test"            % ZioVersion,
-      "dev.zio" %% "zio-config"          % ZioConfigVersion,
-      "dev.zio" %% "zio-config-magnolia" % ZioConfigVersion,
-      "dev.zio" %% "zio-config-typesafe" % ZioConfigVersion,
+      "dev.zio" %% "zio-test" % ZioVersion,
+      `zio-config`,
+      `zio-config-magnolia`,
+      `zio-config-typesafe`,
     ),
     publish / skip                             := true,
     mdocVariables ++= Map(

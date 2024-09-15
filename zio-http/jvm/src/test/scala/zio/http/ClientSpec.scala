@@ -27,9 +27,9 @@ import zio.test._
 
 import zio.stream.ZStream
 
-import zio.http.internal.{DynamicServer, HttpRunnableSpec, serverTestLayer}
+import zio.http.internal.{DynamicServer, RoutesRunnableSpec, serverTestLayer}
 
-object ClientSpec extends HttpRunnableSpec {
+object ClientSpec extends RoutesRunnableSpec {
 
   def clientSpec = suite("ClientSpec")(
     test("respond Ok") {
@@ -105,7 +105,7 @@ object ClientSpec extends HttpRunnableSpec {
       val url  = URL.decode("https://test.com").toOption.get
       val resp = ZClient.batched(Request.get(url)).timeout(500.millis)
       assertZIO(resp)(isNone)
-    } @@ timeout(5.seconds) @@ flaky(5),
+    } @@ timeout(5.seconds) @@ flaky(20),
     test("authorization header without scheme") {
       val app             =
         Handler

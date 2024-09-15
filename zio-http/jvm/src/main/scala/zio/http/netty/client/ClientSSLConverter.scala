@@ -63,6 +63,7 @@ object ClientSSLConverter {
     bldr.build()
   }
 
+private[netty] object ClientSSLConverter {
   private def trustStoreToSslContext(
     trustStoreStream: InputStream,
     trustStorePassword: Secret,

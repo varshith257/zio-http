@@ -9,7 +9,18 @@ const sidebars = {
       link: { type: "doc", id: "index" },
       items: [
         "installation",
+        // Concepts section
+        {
+            type: "category",
+            collapsed: true,
+            label: "Concepts",
+            items: [
+                "concepts/routing",
+                "concepts/middleware",
+                "concepts/endpoint",
+                ],
 
+        },
         // Reference section
         {
           type: "category",
@@ -104,14 +115,8 @@ const sidebars = {
           link: { type: "doc", id: "index" },
           items: [
             "guides/integration-with-zio-config",
+            "guides/testing-http-apps",
           ],
-        },
-        "faq",
-        {
-          // Subcategory: Tutorials
-          type: "category",
-          label: "Tutorials",
-          items: ["tutorials/testing-http-apps"],
         },
 
         // Examples section
