@@ -18,7 +18,7 @@ package zio.http
 
 import zio._
 import zio.test.Assertion._
-import zio.test.TestAspect.{nonFlaky}
+import zio.test.TestAspect.nonFlaky
 import zio.test.{TestAspect, assertZIO}
 
 import zio.http.netty.NettyConfig
@@ -33,7 +33,7 @@ abstract class ClientHttpsSpecBase extends ZIOHttpSpec {
   val badRequest =
     URL
       .decode(
-        "https://www.whatissslcertificate.com/google-has-made-the-list-of-untrusted-providers-of-digital-certificates/",
+        "https://httpbin.org/status/400",
       )
       .toOption
       .get
