@@ -175,6 +175,7 @@ final case class ZClient[-Env, ReqEnv, -In, +Err, +Out](
   ): ZClient[Env, ReqEnv, In, Err2, Out] =
     transform(bodyEncoder.refineOrDie(pf), bodyDecoder.refineOrDie(pf), driver.refineOrDie(pf))
 
+  @deprecated("Use `batched` or `streaming` instead", since = "3.0.0")
   def request(request: Request)(implicit ev: Body <:< In, trace: Trace): ZIO[Env & ReqEnv, Err, Out] = {
     def makeRequest(body: Body) = {
       driver.request(
@@ -236,6 +237,28 @@ final case class ZClient[-Env, ReqEnv, -In, +Err, +Out](
       .request(request)
       .asInstanceOf[ZIO[R & Env & Scope, Err, Out]]
       .fold(ZStream.fail(_), f)
+  }
+
+  def streaming(
+    request: Request,
+  )(implicit ev: Body <:< In, trace: Trace, ev1: ReqEnv =:= Scope): ZIO[Env & ReqEnv, Err, Out] = {
+    def makeRequest(body: Body) = {
+      driver.request(
+        self.version ++ request.version,
+        request.method,
+        self.url ++ request.url,
+        self.headers ++ request.headers,
+        body,
+        sslConfig,
+        proxy,
+      )
+    }
+    if (bodyEncoder == ZClient.BodyEncoder.identity)
+      bodyDecoder.decodeZIO(makeRequest(request.body))
+    else
+      bodyEncoder
+        .encode(ev(request.body))
+        .flatMap(body => bodyDecoder.decodeZIO(makeRequest(body)))
   }
 
   def ssl(ssl: ClientSSLConfig): ZClient[Env, ReqEnv, In, Err, Out] =
