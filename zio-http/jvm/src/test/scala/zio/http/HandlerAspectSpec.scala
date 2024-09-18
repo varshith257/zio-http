@@ -20,17 +20,16 @@ object HandlerAspectSpec extends ZIOSpecDefault {
       test("HandlerAspect should correctly combine path params and middleware context") {
         val route = Method.GET / "base" / string("param") -> handler((param: String, req: Request) => {
           withContext((session: Option[WebSession]) => {
-            val sessionId = session.map(_.id).getOrElse(-1) // Safe handling of session
-
-            ZIO.succeed(Response.text(s"Param: $param, SessionId: $sessionId"))
+            ZIO.succeed {
+              val sessionId = session.map(_.id).getOrElse(-1)
+              Response.text(s"Param: $param, SessionId: $sessionId")
+            }
           })
         }) @@ maybeWebSession
 
         for {
           response   <- route(Request.get(URL(Path.empty / "base" / "testParam")))
           bodyString <- response.body.asString
-          _          <- ZIO.logInfo(s"Response Body: $bodyString") // Log the final response
-
         } yield assertTrue(bodyString == "Param: testParam, SessionId: 42")
       },
       test("HandlerAspect with context can eliminate environment type") {
