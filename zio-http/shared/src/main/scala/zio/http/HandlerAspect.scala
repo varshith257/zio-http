@@ -69,9 +69,9 @@ final case class HandlerAspect[-Env, +CtxOut](
           Response,
           Response,
         ](
-          Handler.fromFunctionZIO[(Request, CtxOut)] { tuple =>
-            that.protocol.incoming(tuple._1).map { case (state, (request, env)) =>
-              (state, (request, zippable.zip(tuple._2, env)))
+          Handler.fromFunctionZIO[(Request, CtxOut)] { case (req, ctxOut1) =>
+            that.protocol.incoming(req).map { case (state, (req2, ctxOut2)) =>
+              (state, (req2, zippable.zip(ctxOut1, ctxOut2)))
             }
           },
         )(
