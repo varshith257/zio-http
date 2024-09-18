@@ -25,7 +25,7 @@ object HandlerAspectSpec extends ZIOSpecDefault {
         }) @@ maybeWebSession
 
         for {
-          response   <- route(Request.get(URL(!! / "base" / "testParam")))
+          response   <- route(Request.get(URL(Path.empty / "base" / "testParam")))
           bodyString <- response.body.asString
         } yield assertTrue(bodyString == "Param: testParam, SessionId: 42")
       },
