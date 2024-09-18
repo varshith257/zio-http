@@ -844,7 +844,7 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
             case sub1: Sub1   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1)))))))))))))
             case sub2: Sub2   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2)))))))))))))
             case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3))))))))))))
-            case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4))))))))))))
+            case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4)))))))))))
             case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub5))))))))))
             case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub6)))))))))
             case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Left(Right(sub7))))))))
@@ -1046,7 +1046,7 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
             case sub11: Sub11 => Right(Left(Left(Left(Left(Right(sub11))))))
             case sub12: Sub12 => Right(Left(Left(Left(Right(sub12)))))
             case sub13: Sub13 => Right(Left(Left(Right(sub13))))
-            case sub14: Sub14 => Right(Left(Left(Right(sub14))))
+            case sub14: Sub14 => Right(Left(Right(sub14)))
             case sub15: Sub15 => Right(Right(sub15))
             case _            => Left(s"Unexpected error type")
           },
