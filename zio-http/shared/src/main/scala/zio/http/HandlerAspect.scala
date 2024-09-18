@@ -69,7 +69,7 @@ final case class HandlerAspect[-Env, +CtxOut](
           Response,
           Response,
         ](
-          Handler.fromFunctionZIO[(Request, CtxOut)] { case (req, ctxOut1) =>
+          Handler.fromFunctionZIO[(Request, CtxOut)] { tuple =>
             that.protocol.incoming(req).map { case (state, (req2, ctxOut2)) =>
               (state, (req2, zippable.zip(ctxOut1, ctxOut2)))
             }
@@ -555,7 +555,22 @@ private[http] trait HandlerAspects extends zio.http.internal.HeaderModifier[Hand
   def interceptIncomingHandler[Env, CtxOut](
     handler: Handler[Env, Response, Request, (Request, CtxOut)],
   ): HandlerAspect[Env, CtxOut] =
-    interceptHandler(handler)(Handler.identity)
+    new HandlerAspect[Env, CtxOut] {
+      def apply[R1 <: Env, B](h: Handler[R1, CtxOut, Throwable, B]): Handler[R1, Request, Throwable, B] =
+        interceptHandler {
+          // Wrap the handler in pattern matching to handle both Request and Tuple cases
+          Handler.fromFunctionZIO {
+            case req: Request =>
+              handler(req)
+
+            // Pattern match to extract the Request from the tuple
+            case tuple: Product
+                if tuple.productArity > 1 && tuple.productElement(tuple.productArity - 1).isInstanceOf[Request] =>
+              val request = tuple.productElement(tuple.productArity - 1).asInstanceOf[Request]
+              handler(request)
+          }
+        }(Handler.identity)
+    }
 
   /**
    * Creates middleware that will apply the specified handler to outgoing

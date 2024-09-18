@@ -5,33 +5,8 @@ import zio.test._
 
 object HandlerAspectSpec extends ZIOSpecDefault {
 
-  case class WebSession(id: Int)
-
-  // Middleware to add session context
-  def maybeWebSession: HandlerAspect[Any, Option[WebSession]] =
-    HandlerAspect.interceptIncomingHandler(
-      Handler.fromFunctionZIO[Request] { req =>
-        ZIO.succeed((req, Some(WebSession(42))))
-      },
-    )
-
   override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("HandlerAspect")(
-      test("HandlerAspect should correctly combine path params and middleware context") {
-        val route = Method.GET / "base" / string("param") -> handler((param: String, req: Request) => {
-          withContext((session: Option[WebSession]) => {
-            ZIO.succeed {
-              val sessionId = session.map(_.id).getOrElse(-1)
-              Response.text(s"Param: $param, SessionId: $sessionId")
-            }
-          })
-        }) @@ maybeWebSession
-
-        for {
-          response   <- route(Request.get(URL(Path.empty / "base" / "testParam")))
-          bodyString <- response.body.asString
-        } yield assertTrue(bodyString == "Param: testParam, SessionId: 42")
-      },
       test("HandlerAspect with context can eliminate environment type") {
         val handler0 = handler((_: Request) => ZIO.serviceWith[Int](i => Response.text(i.toString))) @@
           HandlerAspect.interceptIncomingHandler(handler((req: Request) => (req, req.headers.size)))
@@ -72,5 +47,24 @@ object HandlerAspectSpec extends ZIOSpecDefault {
         } yield assertTrue(bodyString == "1 test")
       },
       // format: on
+      test("HandlerAspect can handle path parameters and context") {
+        val maybeWebSession: HandlerAspect[Any, Option[Int]] =
+          HandlerAspect.interceptIncomingHandler {
+            handler((req: Request) => (req, Some(req.headers.size)))
+          }
+
+        val handlerWithPathParam = handler { (pathParam: String, req: Request) =>
+          withContext((session: Option[Int]) =>
+            ZIO.succeed(Response.text(s"Path: $pathParam, Session: $session"))
+          )
+        } @@ maybeWebSession
+
+        val testRequest = Request(headers = Headers("accept", "*"))
+
+        for {
+          response   <- handlerWithPathParam(("12345", testRequest))
+          bodyString <- response.body.asString
+        } yield assertTrue(bodyString == "Path: 12345, Session: Some(1)")
+      }
     )
 }
