@@ -553,32 +553,29 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
       codec8: HttpCodec[AtomTypes, Sub8],
       codec9: HttpCodec[AtomTypes, Sub9],
     ): HttpCodec[AtomTypes, Value] =
-      (codec1 | codec2 | codec3 | codec4 | codec5 | codec6 | codec7 | codec8 | codec9).transformOrFail(
-        either =>
-          Right(
-            either.left
-              .map(
-                _.left
-                  .map(
-                    _.left.map(_.left.map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge).merge).merge,
-                  )
-                  .merge,
-              )
-              .merge,
-          ),
-        (value: Value) =>
-          value match {
-            case sub1: Sub1 => Right(Left(Left(Left(Left(Left(Left(Left(Left(sub1)))))))))
-            case sub2: Sub2 => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub2)))))))))
-            case sub3: Sub3 => Right(Left(Left(Left(Left(Left(Left(Right(sub3))))))))
-            case sub4: Sub4 => Right(Left(Left(Left(Left(Left(Right(sub4)))))))
-            case sub5: Sub5 => Right(Left(Left(Left(Left(Right(sub5))))))
-            case sub6: Sub6 => Right(Left(Left(Left(Right(sub6)))))
-            case sub7: Sub7 => Right(Left(Left(Right(sub7))))
-            case sub8: Sub8 => Right(Left(Right(sub8)))
-            case sub9: Sub9 => Right(Right(sub9))
-            case _          => Left(s"Unexpected error type")
-          },
+      (codec1 | codec2 | codec3 | codec4 | codec5 | codec6 | codec7 | codec8 | codec9).transformOrFail(either =>
+        Right(
+          either.left
+            .map(
+              _.left
+                .map(_.left.map(_.left.map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge).merge).merge)
+                .merge,
+            )
+            .merge,
+        ),
+      )((value: Value) =>
+        value match {
+          case sub1: Sub1 => Right(Left(Left(Left(Left(Left(Left(Left(Left(sub1)))))))))
+          case sub2: Sub2 => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub2)))))))))
+          case sub3: Sub3 => Right(Left(Left(Left(Left(Left(Left(Right(sub3))))))))
+          case sub4: Sub4 => Right(Left(Left(Left(Left(Left(Right(sub4)))))))
+          case sub5: Sub5 => Right(Left(Left(Left(Left(Right(sub5))))))
+          case sub6: Sub6 => Right(Left(Left(Left(Right(sub6)))))
+          case sub7: Sub7 => Right(Left(Left(Right(sub7))))
+          case sub8: Sub8 => Right(Left(Right(sub8)))
+          case sub9: Sub9 => Right(Right(sub9))
+          case _          => Left(s"Unexpected error type")
+        },
       )
 
     def f10[
@@ -624,20 +621,20 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
               )
               .merge,
           ),
-        (value: Value) =>
-          value match {
-            case sub1: Sub1   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1))))))))))
-            case sub2: Sub2   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2))))))))))
-            case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub3)))))))))
-            case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Right(sub4))))))))
-            case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Right(sub5)))))))
-            case sub6: Sub6   => Right(Left(Left(Left(Left(Right(sub6))))))
-            case sub7: Sub7   => Right(Left(Left(Left(Right(sub7)))))
-            case sub8: Sub8   => Right(Left(Left(Right(sub8))))
-            case sub9: Sub9   => Right(Left(Right(sub9)))
-            case sub10: Sub10 => Right(Right(sub10))
-            case _            => Left(s"Unexpected error type")
-          },
+      )((value: Value) =>
+        value match {
+          case sub1: Sub1   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1))))))))))
+          case sub2: Sub2   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2))))))))))
+          case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub3)))))))))
+          case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Right(sub4))))))))
+          case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Right(sub5)))))))
+          case sub6: Sub6   => Right(Left(Left(Left(Left(Right(sub6))))))
+          case sub7: Sub7   => Right(Left(Left(Left(Right(sub7)))))
+          case sub8: Sub8   => Right(Left(Left(Right(sub8))))
+          case sub9: Sub9   => Right(Left(Right(sub9)))
+          case sub10: Sub10 => Right(Right(sub10))
+          case _            => Left(s"Unexpected error type")
+        },
       )
 
     def f11[
@@ -667,44 +664,43 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
       codec11: HttpCodec[AtomTypes, Sub11],
     ): HttpCodec[AtomTypes, Value] =
       (codec1 | codec2 | codec3 | codec4 | codec5 | codec6 | codec7 | codec8 | codec9 | codec10 | codec11)
-        .transformOrFail(
-          either =>
-            Right(
-              either.left
-                .map(
-                  _.left
-                    .map(
-                      _.left
-                        .map(
-                          _.left
-                            .map(
-                              _.left
-                                .map(_.left.map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge).merge)
-                                .merge,
-                            )
-                            .merge,
-                        )
-                        .merge,
-                    )
-                    .merge,
-                )
-                .merge,
-            ),
-          (value: Value) =>
-            value match {
-              case sub1: Sub1   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1)))))))))))
-              case sub2: Sub2   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2)))))))))))
-              case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3))))))))))
-              case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub4)))))))))
-              case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Right(sub5))))))))
-              case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Right(sub6)))))))
-              case sub7: Sub7   => Right(Left(Left(Left(Left(Right(sub7))))))
-              case sub8: Sub8   => Right(Left(Left(Left(Right(sub8)))))
-              case sub9: Sub9   => Right(Left(Left(Right(sub9))))
-              case sub10: Sub10 => Right(Left(Right(sub10)))
-              case sub11: Sub11 => Right(Right(sub11))
-              case _            => Left(s"Unexpected error type")
-            },
+        .transformOrFail(either =>
+          Right(
+            either.left
+              .map(
+                _.left
+                  .map(
+                    _.left
+                      .map(
+                        _.left
+                          .map(
+                            _.left
+                              .map(_.left.map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge).merge)
+                              .merge,
+                          )
+                          .merge,
+                      )
+                      .merge,
+                  )
+                  .merge,
+              )
+              .merge,
+          ),
+        )((value: Value) =>
+          value match {
+            case sub1: Sub1   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1)))))))))))
+            case sub2: Sub2   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2)))))))))))
+            case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3))))))))))
+            case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub4)))))))))
+            case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Right(sub5))))))))
+            case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Right(sub6)))))))
+            case sub7: Sub7   => Right(Left(Left(Left(Left(Right(sub7))))))
+            case sub8: Sub8   => Right(Left(Left(Left(Right(sub8)))))
+            case sub9: Sub9   => Right(Left(Left(Right(sub9))))
+            case sub10: Sub10 => Right(Left(Right(sub10)))
+            case sub11: Sub11 => Right(Right(sub11))
+            case _            => Left(s"Unexpected error type")
+          },
         )
 
     def f12[
@@ -736,52 +732,50 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
       codec12: HttpCodec[AtomTypes, Sub12],
     ): HttpCodec[AtomTypes, Value] =
       (codec1 | codec2 | codec3 | codec4 | codec5 | codec6 | codec7 | codec8 | codec9 | codec10 | codec11 | codec12)
-        .transformOrFail(
-          either =>
-            Right(
-              either.left
-                .map(
-                  _.left
-                    .map(
-                      _.left
-                        .map(
-                          _.left
-                            .map(
-                              _.left
-                                .map(
-                                  _.left
-                                    .map(
-                                      _.left.map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge).merge,
-                                    )
-                                    .merge,
-                                )
-                                .merge,
-                            )
-                            .merge,
-                        )
-                        .merge,
-                    )
-                    .merge,
-                )
-                .merge,
-            ),
-          (value: Value) =>
-            value match {
-              case sub1: Sub1   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1))))))))))))
-              case sub2: Sub2   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2))))))))))))
-              case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3)))))))))))
-              case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4))))))))))
-              case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub5)))))))))
-              case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Right(sub6))))))))
-              case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Right(sub7)))))))
-              case sub8: Sub8   => Right(Left(Left(Left(Left(Right(sub8))))))
-              case sub9: Sub9   => Right(Left(Left(Left(Right(sub9)))))
-              case sub10: Sub10 => Right(Left(Left(Right(sub10))))
-              case sub10: Sub11 => Right(Left(Right(sub10)))
-              case sub12: Sub12 => Right(Right(sub12))
-              case _            => Left(s"Unexpected error type")
-            },
+        .transformOrFail(either =>
+          Right(
+            either.left
+              .map(
+                _.left
+                  .map(
+                    _.left
+                      .map(
+                        _.left
+                          .map(
+                            _.left
+                              .map(
+                                _.left
+                                  .map(_.left.map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge).merge)
+                                  .merge,
+                              )
+                              .merge,
+                          )
+                          .merge,
+                      )
+                      .merge,
+                  )
+                  .merge,
+              )
+              .merge,
+          ),
+        )((value: Value) =>
+          value match {
+            case sub1: Sub1   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1))))))))))))
+            case sub2: Sub2   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2))))))))))))
+            case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3)))))))))))
+            case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4))))))))))
+            case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub5)))))))))
+            case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Right(sub6))))))))
+            case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Right(sub7)))))))
+            case sub8: Sub8   => Right(Left(Left(Left(Left(Right(sub8))))))
+            case sub9: Sub9   => Right(Left(Left(Left(Right(sub9)))))
+            case sub10: Sub10 => Right(Left(Left(Right(sub10))))
+            case sub10: Sub11 => Right(Left(Right(sub10)))
+            case sub12: Sub12 => Right(Right(sub12))
+            case _            => Left(s"Unexpected error type")
+          },
         )
+
     def f13[
       AtomTypes,
       Sub1 <: Value: ClassTag,
@@ -813,58 +807,55 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
       codec13: HttpCodec[AtomTypes, Sub13],
     ): HttpCodec[AtomTypes, Value] =
       (codec1 | codec2 | codec3 | codec4 | codec5 | codec6 | codec7 | codec8 | codec9 | codec10 | codec11 | codec12 | codec13)
-        .transformOrFail(
-          either =>
-            Right(
-              either.left
-                .map(
-                  _.left
-                    .map(
-                      _.left
-                        .map(
-                          _.left
-                            .map(
-                              _.left
-                                .map(
-                                  _.left
-                                    .map(
-                                      _.left
-                                        .map(
-                                          _.left
-                                            .map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge)
-                                            .merge,
-                                        )
-                                        .merge,
-                                    )
-                                    .merge,
-                                )
-                                .merge,
-                            )
-                            .merge,
-                        )
-                        .merge,
-                    )
-                    .merge,
-                )
-                .merge,
-            ),
-          (value: Value) =>
-            value match {
-              case sub1: Sub1   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1)))))))))))))
-              case sub2: Sub2   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2)))))))))))))
-              case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3))))))))))))
-              case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4))))))))))))
-              case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub5))))))))))
-              case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub6)))))))))
-              case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Left(Right(sub7))))))))
-              case sub8: Sub8   => Right(Left(Left(Left(Left(Left(Right(sub8)))))))
-              case sub9: Sub9   => Right(Left(Left(Left(Left(Right(sub9))))))
-              case sub10: Sub10 => Right(Left(Left(Left(Right(sub10)))))
-              case sub11: Sub11 => Right(Left(Left(Right(sub11))))
-              case sub12: Sub12 => Right(Left(Right(sub12)))
-              case sub13: Sub13 => Right(Right(sub13))
-              case _            => Left(s"Unexpected error type")
-            },
+        .transformOrFail(either =>
+          Right(
+            either.left
+              .map(
+                _.left
+                  .map(
+                    _.left
+                      .map(
+                        _.left
+                          .map(
+                            _.left
+                              .map(
+                                _.left
+                                  .map(
+                                    _.left
+                                      .map(
+                                        _.left.map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge).merge,
+                                      )
+                                      .merge,
+                                  )
+                                  .merge,
+                              )
+                              .merge,
+                          )
+                          .merge,
+                      )
+                      .merge,
+                  )
+                  .merge,
+              )
+              .merge,
+          ),
+        )((value: Value) =>
+          value match {
+            case sub1: Sub1   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1)))))))))))))
+            case sub2: Sub2   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2)))))))))))))
+            case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3))))))))))))
+            case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4))))))))))))
+            case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub5))))))))))
+            case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub6)))))))))
+            case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Left(Right(sub7))))))))
+            case sub8: Sub8   => Right(Left(Left(Left(Left(Left(Right(sub8)))))))
+            case sub9: Sub9   => Right(Left(Left(Left(Left(Right(sub9))))))
+            case sub10: Sub10 => Right(Left(Left(Left(Right(sub10)))))
+            case sub11: Sub11 => Right(Left(Left(Right(sub11))))
+            case sub12: Sub12 => Right(Left(Right(sub12)))
+            case sub13: Sub13 => Right(Right(sub13))
+            case _            => Left(s"Unexpected error type")
+          },
         )
 
     def f14[
@@ -900,61 +891,64 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
       codec14: HttpCodec[AtomTypes, Sub14],
     ): HttpCodec[AtomTypes, Value] =
       (codec1 | codec2 | codec3 | codec4 | codec5 | codec6 | codec7 | codec8 | codec9 | codec10 | codec11 | codec12 | codec13 | codec14)
-        .transformOrFail(
-          either =>
-            Right(
-              either.left
-                .map(
-                  _.left
-                    .map(
-                      _.left
-                        .map(
-                          _.left
-                            .map(
-                              _.left
-                                .map(
-                                  _.left
-                                    .map(
-                                      _.left
-                                        .map(
-                                          _.left
-                                            .map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge)
-                                            .merge,
-                                        )
-                                        .merge,
-                                    )
-                                    .merge,
-                                )
-                                .merge,
-                            )
-                            .merge,
-                        )
-                        .merge,
-                    )
-                    .merge,
-                )
-                .merge,
-            ),
-          (value: Value) =>
-            value match {
-              case sub1: Sub1   =>
-                Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1))))))))))))))
-              case sub2: Sub2   =>
-                Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2))))))))))))))
-              case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3)))))))))))))
-              case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4))))))))))))
-              case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub5)))))))))))
-              case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub6))))))))))
-              case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub7)))))))))
-              case sub8: Sub8   => Right(Left(Left(Left(Left(Left(Left(Right(sub8))))))))
-              case sub9: Sub9   => Right(Left(Left(Left(Left(Left(Right(sub9)))))))
-              case sub10: Sub10 => Right(Left(Left(Left(Left(Right(sub10))))))
-              case sub11: Sub11 => Right(Left(Left(Left(Right(sub11)))))
-              case sub12: Sub12 => Right(Left(Left(Right(sub12))))
-              case sub13: Sub13 => Right(Left(Right(sub13)))
-              case sub14: Sub14 => Right(Right(sub14))
-              case _            => Left(s"Unexpected error type")
-            },
+        .transformOrFail(either =>
+          Right(
+            either.left
+              .map(
+                _.left
+                  .map(
+                    _.left
+                      .map(
+                        _.left
+                          .map(
+                            _.left
+                              .map(
+                                _.left
+                                  .map(
+                                    _.left
+                                      .map(
+                                        _.left
+                                          .map(
+                                            _.left
+                                              .map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge)
+                                              .merge,
+                                          )
+                                          .merge,
+                                      )
+                                      .merge,
+                                  )
+                                  .merge,
+                              )
+                              .merge,
+                          )
+                          .merge,
+                      )
+                      .merge,
+                  )
+                  .merge,
+              )
+              .merge,
+          ),
+        )((value: Value) =>
+          value match {
+            case sub1: Sub1   =>
+              Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1))))))))))))))
+            case sub2: Sub2   =>
+              Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2))))))))))))))
+            case sub3: Sub3   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3)))))))))))))
+            case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4))))))))))))
+            case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub5)))))))))))
+            case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub6))))))))))
+            case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub7)))))))))
+            case sub8: Sub8   => Right(Left(Left(Left(Left(Left(Left(Right(sub8))))))))
+            case sub9: Sub9   => Right(Left(Left(Left(Left(Left(Right(sub9)))))))
+            case sub10: Sub10 => Right(Left(Left(Left(Left(Right(sub10))))))
+            case sub11: Sub11 => Right(Left(Left(Left(Right(sub11)))))
+            case sub12: Sub12 => Right(Left(Left(Right(sub12))))
+            case sub13: Sub13 => Right(Left(Right(sub13)))
+            case sub14: Sub14 => Right(Right(sub14))
+            case _            => Left(s"Unexpected error type")
+          },
         )
 
     def f15[
@@ -992,67 +986,70 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
       codec15: HttpCodec[AtomTypes, Sub15],
     ): HttpCodec[AtomTypes, Value] =
       (codec1 | codec2 | codec3 | codec4 | codec5 | codec6 | codec7 | codec8 | codec9 | codec10 | codec11 | codec12 | codec13 | codec14 | codec15)
-        .transformOrFail(
-          either =>
-            Right(
-              either.left
-                .map(
-                  _.left
-                    .map(
-                      _.left
-                        .map(
-                          _.left
-                            .map(
-                              _.left
-                                .map(
-                                  _.left
-                                    .map(
-                                      _.left
-                                        .map(
-                                          _.left
-                                            .map(
-                                              _.left
-                                                .map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge)
-                                                .merge,
-                                            )
-                                            .merge,
-                                        )
-                                        .merge,
-                                    )
-                                    .merge,
-                                )
-                                .merge,
-                            )
-                            .merge,
-                        )
-                        .merge,
-                    )
-                    .merge,
-                )
-                .merge,
-            ),
-          (value: Value) =>
-            value match {
-              case sub1: Sub1   =>
-                Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1)))))))))))))))
-              case sub2: Sub2   =>
-                Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2)))))))))))))))
-              case sub3: Sub3   =>
-                Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3))))))))))))))
-              case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4)))))))))))))
-              case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub5))))))))))))
-              case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub6)))))))))))
-              case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub7))))))))))
-              case sub8: Sub8   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub8)))))))))
-              case sub9: Sub9   => Right(Left(Left(Left(Left(Left(Left(Right(sub9))))))))
-              case sub10: Sub10 => Right(Left(Left(Left(Left(Left(Right(sub10)))))))
-              case sub11: Sub11 => Right(Left(Left(Left(Left(Right(sub11))))))
-              case sub12: Sub12 => Right(Left(Left(Left(Right(sub12)))))
-              case sub13: Sub13 => Right(Left(Left(Right(sub13))))
-              case sub14: Sub14 => Right(Left(Left(Right(sub14))))
-              case sub15: Sub15 => Right(Right(sub15))
-              case _            => Left(s"Unexpected error type")
-            },
+        .transformOrFail(either =>
+          Right(
+            either.left
+              .map(
+                _.left
+                  .map(
+                    _.left
+                      .map(
+                        _.left
+                          .map(
+                            _.left
+                              .map(
+                                _.left
+                                  .map(
+                                    _.left
+                                      .map(
+                                        _.left
+                                          .map(
+                                            _.left
+                                              .map(
+                                                _.left
+                                                  .map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge)
+                                                  .merge,
+                                              )
+                                              .merge,
+                                          )
+                                          .merge,
+                                      )
+                                      .merge,
+                                  )
+                                  .merge,
+                              )
+                              .merge,
+                          )
+                          .merge,
+                      )
+                      .merge,
+                  )
+                  .merge,
+              )
+              .merge,
+          ),
+        )((value: Value) =>
+          value match {
+            case sub1: Sub1   =>
+              Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1)))))))))))))))
+            case sub2: Sub2   =>
+              Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2)))))))))))))))
+            case sub3: Sub3   =>
+              Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3))))))))))))))
+            case sub4: Sub4   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4)))))))))))))
+            case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub5))))))))))))
+            case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub6)))))))))))
+            case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub7))))))))))
+            case sub8: Sub8   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub8)))))))))
+            case sub9: Sub9   => Right(Left(Left(Left(Left(Left(Left(Right(sub9))))))))
+            case sub10: Sub10 => Right(Left(Left(Left(Left(Left(Right(sub10)))))))
+            case sub11: Sub11 => Right(Left(Left(Left(Left(Right(sub11))))))
+            case sub12: Sub12 => Right(Left(Left(Left(Right(sub12)))))
+            case sub13: Sub13 => Right(Left(Left(Right(sub13))))
+            case sub14: Sub14 => Right(Left(Left(Right(sub14))))
+            case sub15: Sub15 => Right(Right(sub15))
+            case _            => Left(s"Unexpected error type")
+          },
         )
 
     def f16[
@@ -1092,69 +1089,78 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
       codec16: HttpCodec[AtomTypes, Sub16],
     ): HttpCodec[AtomTypes, Value] =
       (codec1 | codec2 | codec3 | codec4 | codec5 | codec6 | codec7 | codec8 | codec9 | codec10 | codec11 | codec12 | codec13 | codec14 | codec15 | codec16)
-        .transformOrFail(
-          either =>
-            Right(
-              either.left
-                .map(
-                  _.left
-                    .map(
-                      _.left
-                        .map(
-                          _.left
-                            .map(
-                              _.left
-                                .map(
-                                  _.left
-                                    .map(
-                                      _.left
-                                        .map(
-                                          _.left
-                                            .map(
-                                              _.left
-                                                .map(_.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge)
-                                                .merge,
-                                            )
-                                            .merge,
-                                        )
-                                        .merge,
-                                    )
-                                    .merge,
-                                )
-                                .merge,
-                            )
-                            .merge,
-                        )
-                        .merge,
-                    )
-                    .merge,
-                )
-                .merge,
-            ),
-          (value: Value) =>
-            value match {
-              case sub1: Sub1   =>
-                Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1))))))))))))))))
-              case sub2: Sub2   =>
-                Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2))))))))))))))))
-              case sub3: Sub3   =>
-                Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3)))))))))))))))
-              case sub4: Sub4   =>
-                Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4))))))))))))))
-              case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub5)))))))))))))
-              case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub6))))))))))))
-              case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub7)))))))))))
-              case sub8: Sub8   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub8))))))))))
-              case sub9: Sub9   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub9)))))))))
-              case sub10: Sub10 => Right(Left(Left(Left(Left(Left(Left(Right(sub10))))))))
-              case sub11: Sub11 => Right(Left(Left(Left(Left(Left(Right(sub11)))))))
-              case sub12: Sub12 => Right(Left(Left(Left(Left(Right(sub12))))))
-              case sub13: Sub13 => Right(Left(Left(Left(Right(sub13)))))
-              case sub14: Sub14 => Right(Left(Left(Right(sub14))))
-              case sub15: Sub15 => Right(Left(Right(sub15)))
-              case sub16: Sub16 => Right(Right(sub16))
-              case _            => Left(s"Unexpected error type")
-            },
+        .transformOrFail(either =>
+          Right(
+            either.left
+              .map(
+                _.left
+                  .map(
+                    _.left
+                      .map(
+                        _.left
+                          .map(
+                            _.left
+                              .map(
+                                _.left
+                                  .map(
+                                    _.left
+                                      .map(
+                                        _.left
+                                          .map(
+                                            _.left
+                                              .map(
+                                                _.left
+                                                  .map(
+                                                    _.left
+                                                      .map(
+                                                        _.left.map(_.left.map(_.left.map(_.merge).merge).merge).merge,
+                                                      )
+                                                      .merge,
+                                                  )
+                                                  .merge,
+                                              )
+                                              .merge,
+                                          )
+                                          .merge,
+                                      )
+                                      .merge,
+                                  )
+                                  .merge,
+                              )
+                              .merge,
+                          )
+                          .merge,
+                      )
+                      .merge,
+                  )
+                  .merge,
+              )
+              .merge,
+          ),
+        )((value: Value) =>
+          value match {
+            case sub1: Sub1   =>
+              Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(sub1))))))))))))))))
+            case sub2: Sub2   =>
+              Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub2))))))))))))))))
+            case sub3: Sub3   =>
+              Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub3)))))))))))))))
+            case sub4: Sub4   =>
+              Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub4))))))))))))))
+            case sub5: Sub5   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub5)))))))))))))
+            case sub6: Sub6   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub6))))))))))))
+            case sub7: Sub7   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub7)))))))))))
+            case sub8: Sub8   => Right(Left(Left(Left(Left(Left(Left(Left(Left(Right(sub8))))))))))
+            case sub9: Sub9   => Right(Left(Left(Left(Left(Left(Left(Left(Right(sub9)))))))))
+            case sub10: Sub10 => Right(Left(Left(Left(Left(Left(Left(Right(sub10))))))))
+            case sub11: Sub11 => Right(Left(Left(Left(Left(Left(Right(sub11)))))))
+            case sub12: Sub12 => Right(Left(Left(Left(Left(Right(sub12))))))
+            case sub13: Sub13 => Right(Left(Left(Left(Right(sub13)))))
+            case sub14: Sub14 => Right(Left(Left(Right(sub14))))
+            case sub15: Sub15 => Right(Left(Right(sub15)))
+            case sub16: Sub16 => Right(Right(sub16))
+            case _            => Left(s"Unexpected error type")
+          },
         )
 
   }
