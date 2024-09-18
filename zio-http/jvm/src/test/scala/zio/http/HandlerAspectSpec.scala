@@ -22,7 +22,7 @@ object HandlerAspectSpec extends ZIOSpecDefault {
           withContext((session: Option[WebSession]) => {
             val sessionId = session.map(_.id).getOrElse(-1) // Safe handling of session
 
-            ZIO.succeed(Response.text(s"Param: $param, SessionId: ${session.get.id}"))
+            ZIO.succeed(Response.text(s"Param: $param, SessionId: $sessionId"))
           })
         }) @@ maybeWebSession
 
