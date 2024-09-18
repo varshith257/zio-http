@@ -20,7 +20,6 @@ object HandlerAspectSpec extends ZIOSpecDefault {
       test("HandlerAspect should correctly combine path params and middleware context") {
         val route = Method.GET / "base" / string("param") -> handler((param: String, req: Request) => {
           withContext((session: Option[WebSession]) => {
-            ZIO.logInfo(s"Param: $param, Session: $session") *>
             val sessionId = session.map(_.id).getOrElse(-1) // Safe handling of session
 
             ZIO.succeed(Response.text(s"Param: $param, SessionId: $sessionId"))
