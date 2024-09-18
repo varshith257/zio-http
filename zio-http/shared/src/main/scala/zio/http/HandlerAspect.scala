@@ -555,22 +555,28 @@ private[http] trait HandlerAspects extends zio.http.internal.HeaderModifier[Hand
   def interceptIncomingHandler[Env, CtxOut](
     handler: Handler[Env, Response, Request, (Request, CtxOut)],
   ): HandlerAspect[Env, CtxOut] =
-    new HandlerAspect[Env, CtxOut] {
-      def apply[R1 <: Env, B](h: Handler[R1, CtxOut, Throwable, B]): Handler[R1, Request, Throwable, B] =
-        interceptHandler {
-          // Wrap the handler in pattern matching to handle both Request and Tuple cases
-          Handler.fromFunctionZIO {
-            case req: Request =>
-              handler(req)
+    HandlerAspect(
+      ProtocolStack.interceptHandler[Env, CtxOut](
+        Handler.fromFunctionZIO {
+          case req: Request =>
+            // For plain Request, process as normal
+            handler(req)
 
-            // Pattern match to extract the Request from the tuple
-            case tuple: Product
-                if tuple.productArity > 1 && tuple.productElement(tuple.productArity - 1).isInstanceOf[Request] =>
-              val request = tuple.productElement(tuple.productArity - 1).asInstanceOf[Request]
-              handler(request)
-          }
-        }(Handler.identity)
-    }
+          // For tuples where the last element is a Request
+          case tuple: Product
+              if tuple.productArity > 1 && tuple.productElement(tuple.productArity - 1).isInstanceOf[Request] =>
+            val request = tuple.productElement(tuple.productArity - 1).asInstanceOf[Request]
+            handler(request).map { case (updatedReq, ctxOut) =>
+              // Rebuild the tuple with the modified Request
+              val updatedTuple = tuple.productIterator.toArray.updated(tuple.productArity - 1, updatedReq)
+              (Tuple.fromArray(updatedTuple), ctxOut)
+            }
+
+          case _ =>
+            ZIO.fail(new RuntimeException("Unexpected input type"))
+        },
+      )(Handler.identity),
+    )
 
   /**
    * Creates middleware that will apply the specified handler to outgoing
