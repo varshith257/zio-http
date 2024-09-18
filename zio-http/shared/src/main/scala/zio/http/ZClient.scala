@@ -38,7 +38,7 @@ final case class ZClient[-Env, ReqEnv, -In, +Err, +Out](
   driver: ZClient.Driver[Env, ReqEnv, Err],
 ) extends HeaderOps[ZClient[Env, ReqEnv, In, Err, Out]] { self =>
   def apply(request: Request)(implicit ev: Body <:< In, trace: Trace): ZIO[Env & ReqEnv, Err, Out] =
-    self.request(request)
+    self.batched(request)
 
   override def updateHeaders(update: Headers => Headers)(implicit trace: Trace): ZClient[Env, ReqEnv, In, Err, Out] =
     copy(headers = update(headers))
@@ -234,7 +234,7 @@ final case class ZClient[-Env, ReqEnv, -In, +Err, +Out](
     ev2: ReqEnv =:= Scope,
   ): ZStream[R & Env, E0, A] = ZStream.unwrapScoped[R & Env] {
     self
-      .request(request)
+      .streaming(request)
       .asInstanceOf[ZIO[R & Env & Scope, Err, Out]]
       .fold(ZStream.fail(_), f)
   }
@@ -302,7 +302,7 @@ object ZClient extends ZClientPlatformSpecific {
    *   memory, allowing to stream response bodies
    */
   def batched(request: Request)(implicit trace: Trace): ZIO[Client, Throwable, Response] =
-    ZIO.serviceWithZIO[Client](_.batched.request(request))
+    ZIO.serviceWithZIO[Client](_.batched.batched(request))
 
   def fromDriver[Env, ReqEnv, Err](driver: Driver[Env, ReqEnv, Err]): ZClient[Env, ReqEnv, Body, Err, Response] =
     ZClient(
@@ -335,7 +335,7 @@ object ZClient extends ZClientPlatformSpecific {
    *   request's resources (i.e., `Scope`)
    */
   def streaming(request: Request)(implicit trace: Trace): ZIO[Client & Scope, Throwable, Response] =
-    ZIO.serviceWithZIO[Client](_.request(request))
+    ZIO.serviceWithZIO[Client](_.batched(request))
 
   /**
    * Executes an HTTP request, and transforms the response to a `ZStream` using
