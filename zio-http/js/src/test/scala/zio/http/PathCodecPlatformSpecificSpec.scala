@@ -1,8 +1,9 @@
 package zio.http.codec
 
 import zio._
-import zio.test._
+
 import zio.test.Assertion._
+import zio.test._
 
 object PathCodecPlatformSpecificSpec extends ZIOSpecDefault {
 
