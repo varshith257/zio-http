@@ -86,24 +86,24 @@ object ZClientAspectSpec extends ZIOHttpSpec {
           annotations.head.contains("duration_ms"),
         ),
       ),
-      test("followRedirects")(
-        for {
-          port       <- Server.install(redir ++ routes)
-          baseClient <- ZIO.service[Client]
-          client = baseClient
-            .url(
-              URL(Path.empty, Location.Absolute(Scheme.HTTP, "localhost", Some(port))),
-            )
-            .batched @@ ZClientAspect.followRedirects(2)((resp, message) => ZIO.logInfo(message).as(resp))
-          response <- ZIO.scoped {
-            ZIO.serviceWithZIO[Client](
-              _.batched(Request.get(URL.decode(s"http://localhost:$port/redirect").toOption.get)),
-            )
-          }
-        } yield assertTrue(
-          extractStatus(response) == Status.Ok,
-        ),
-      ),
+      test("followRedirects") {
+        @nowarn("cat=deprecation")
+        def followRedirectsTest = {
+          for {
+            port       <- Server.install(redir ++ routes)
+            baseClient <- ZIO.service[Client]
+            client = baseClient
+              .url(
+                URL(Path.empty, Location.Absolute(Scheme.HTTP, "localhost", Some(port))),
+              )
+              .batched @@ ZClientAspect.followRedirects(2)((resp, message) => ZIO.logInfo(message).as(resp))
+            response <- client.batched(Request.get(URL.decode(s"http://localhost:$port/redirect").toOption.get))
+          } yield assertTrue(
+            extractStatus(response) == Status.Ok,
+          )
+        }
+        followRedirectsTest
+      },
     ).provide(
       ZLayer.succeed(Server.Config.default.onAnyOpenPort),
       Server.customized,
