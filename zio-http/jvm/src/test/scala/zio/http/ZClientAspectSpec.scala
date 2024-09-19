@@ -95,7 +95,9 @@ object ZClientAspectSpec extends ZIOHttpSpec {
               URL(Path.empty, Location.Absolute(Scheme.HTTP, "localhost", Some(port))),
             )
             .batched @@ ZClientAspect.followRedirects(2)((resp, message) => ZIO.logInfo(message).as(resp))
-          response <- client.batched(Request.get(URL.empty / "redirect"))
+          response <- ZIO.scoped {
+            client.batched(Request.get(URL.empty / "redirect"))
+          }
         } yield assertTrue(
           extractStatus(response) == Status.Ok,
         ),

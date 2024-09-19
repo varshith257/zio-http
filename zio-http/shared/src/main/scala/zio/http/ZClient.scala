@@ -18,6 +18,8 @@ package zio.http
 
 import java.net.{InetSocketAddress, URI}
 
+import scala.annotation.nowarn
+
 import zio._
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 
@@ -26,7 +28,6 @@ import zio.stream.ZStream
 import zio.http.Header.UserAgent
 import zio.http.URL.Location
 import zio.http.internal._
-import scala.annotation.nowarn
 
 final case class ZClient[-Env, ReqEnv, -In, +Err, +Out](
   version: Version,
