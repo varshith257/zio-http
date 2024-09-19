@@ -37,6 +37,7 @@ final case class ZClient[-Env, ReqEnv, -In, +Err, +Out](
   bodyDecoder: ZClient.BodyDecoder[Env, Err, Out],
   driver: ZClient.Driver[Env, ReqEnv, Err],
 ) extends HeaderOps[ZClient[Env, ReqEnv, In, Err, Out]] { self =>
+  @nowarn("cat=deprecation")
   def apply(request: Request)(implicit ev: Body <:< In, trace: Trace): ZIO[Env & ReqEnv, Err, Out] =
     self.request(request)
 
