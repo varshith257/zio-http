@@ -889,8 +889,8 @@ object CodeGenSpec extends ZIOSpecDefault {
         }
       } @@ TestAspect.exceptScala3,
       test("Additional aliased referenced properties") {
-        val openAPIString              = stringFromResource("/inline_schema_constrained_keys_map.yaml")
-        val scalafmtPath: Option[Path] = Some(Paths.get(".scalafmt.conf"))
+        val openAPIString                            = stringFromResource("/inline_schema_constrained_keys_map.yaml")
+        val scalafmtPath: Option[java.nio.file.Path] = Some(java.nio.file.Paths.get(".scalafmt.conf"))
 
         openApiFromYamlString(openAPIString) { oapi =>
           codeGenFromOpenAPI(oapi, Config.default.copy(generateSafeTypeAliases = true)) { testDir =>
@@ -978,8 +978,8 @@ object CodeGenSpec extends ZIOSpecDefault {
         }
       } @@ TestAspect.exceptScala3,
       test("Aliased type in key schema generates Newtype file") {
-        val openAPIString              = stringFromResource("/inline_schema_aliased_type_in_key_schema.yaml")
-        val scalafmtPath: Option[Path] = Some(Paths.get(".scalafmt.conf"))
+        val openAPIString = stringFromResource("/inline_schema_aliased_type_in_key_schema.yaml")
+        val scalafmtPath: Option[java.nio.file.Path] = Some(java.nio.file.Paths.get(".scalafmt.conf"))
 
         openApiFromYamlString(openAPIString) { oapi =>
           codeGenFromOpenAPI(oapi, Config.default.copy(generateSafeTypeAliases = true)) { testDir =>
