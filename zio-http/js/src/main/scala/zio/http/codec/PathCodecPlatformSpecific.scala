@@ -2,11 +2,9 @@ package zio.http.codec
 
 trait PathCodecPlatformSpecific {
   private[codec] def parseLong(s: CharSequence, beginIndex: Int, endIndex: Int, radix: Int): Long = {
-    require(s != null, "CharSequence 's' must not be null")
-    require(
-      beginIndex >= 0 && endIndex <= s.length && beginIndex <= endIndex,
-      s"Invalid indices: beginIndex=$beginIndex, endIndex=$endIndex, length=${s.length}",
-    )
+    require(s != null, "CharSequence cannot be null")
+    checkFromToIndex(beginIndex, endIndex, s.length)
+
     if (radix < Character.MIN_RADIX)
       throw new NumberFormatException("radix " + radix + " less than Character.MIN_RADIX")
     if (radix > Character.MAX_RADIX)
@@ -43,11 +41,9 @@ trait PathCodecPlatformSpecific {
   }
 
   private[codec] def parseInt(s: CharSequence, beginIndex: Int, endIndex: Int, radix: Int): Int = {
-    require(s != null, "CharSequence 's' must not be null")
-    require(
-      beginIndex >= 0 && endIndex <= s.length && beginIndex <= endIndex,
-      s"Invalid indices: beginIndex=$beginIndex, endIndex=$endIndex, length=${s.length}",
-    )
+    require(s != null, "CharSequence cannot be null")
+    checkFromToIndex(beginIndex, endIndex, s.length)
+
     if (radix < Character.MIN_RADIX)
       throw new NumberFormatException("radix " + radix + " less than Character.MIN_RADIX")
     if (radix > Character.MAX_RADIX)
@@ -92,4 +88,10 @@ trait PathCodecPlatformSpecific {
     "For input string: \"" + s + "\"" + (if (radix == 10) ""
                                          else " under radix " + radix),
   )
+
+  private def checkFromToIndex(from: Int, to: Int, length: Int): Unit = {
+    if (from < 0 || to > length || from > to) {
+      throw new IndexOutOfBoundsException(s"Range [$from, $to) out of bounds for length $length")
+    }
+  }
 }
