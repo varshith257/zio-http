@@ -9,7 +9,7 @@ import zio.http.Method
 import zio.http.endpoint.openapi.OpenAPI.ReferenceOr
 import zio.http.endpoint.openapi.{JsonSchema, OpenAPI}
 import zio.http.gen.scala.Code._
-import zio.http.gen.scala.CodeGen._
+import zio.http.gen.scala.{Code, CodeGen}
 
 object EndpointGen {
 
@@ -1361,7 +1361,7 @@ final case class EndpointGen(config: Config) {
         val (fileName, newtypeCode)    = createNewtypeFile(ref)
         val files: Map[String, String] = Map(fileName -> newtypeCode)
 
-        writeFiles(files, basePath, basePackage, scalafmtPath)
+        CodeGen.writeFiles(files, basePath, basePackage, scalafmtPath)
 
       case _ =>
         throw new Exception(s"Newtype generation is only supported for string schemas, but got: $ref")
