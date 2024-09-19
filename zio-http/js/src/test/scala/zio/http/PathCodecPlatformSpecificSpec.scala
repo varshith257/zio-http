@@ -13,10 +13,10 @@ object PathCodecPlatformSpecificSpec extends ZIOSpecDefault {
     },
     test("parseInt should throw an error for an invalid radix") {
       val charSequence = "12345"
-      val exception    = intercept[NumberFormatException] {
+      val result       = ZIO.attempt {
         new PathCodecPlatformSpecific {}.parseInt(charSequence, 0, charSequence.length, Character.MAX_RADIX + 1)
-      }
-      assert(exception.getMessage)(containsString("radix"))
+      }.either
+      assert(result)(isLeft(hasMessage(containsString("radix"))))
     },
     test("parseLong should correctly parse a valid long from a CharSequence") {
       val charSequence = "123456789012345"
@@ -25,10 +25,10 @@ object PathCodecPlatformSpecificSpec extends ZIOSpecDefault {
     },
     test("parseLong should throw an error for an invalid input") {
       val charSequence = "invalid123"
-      val exception    = intercept[NumberFormatException] {
+      val result       = ZIO.attempt {
         new PathCodecPlatformSpecific {}.parseLong(charSequence, 0, charSequence.length, 10)
-      }
-      assert(exception.getMessage)(containsString("Error at index"))
+      }.either
+      assert(result)(isLeft(hasMessage(containsString("Error at index"))))
     },
   )
 }
