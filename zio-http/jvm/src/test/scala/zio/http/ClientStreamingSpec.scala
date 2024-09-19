@@ -150,9 +150,9 @@ object ClientStreamingSpec extends RoutesRunnableSpec {
                   Request
                     .post(
                       URL.decode(s"http://localhost:$port/form").toOption.get,
-                      Body.fromMultipartForm(Form(fields.map(_._1): _*), boundary),
+                      Body.fromMultipartForm(Form(fields.map(_._1): _*), boundary)
                     )
-                    .addHeaders(Headers(Header.ContentType(MediaType.multipart.`form-data`, Some(boundary)))),
+                    .addHeaders(Headers(Header.ContentType(MediaType.multipart.`form-data`, Some(boundary))))
                 )
                 .timeoutFail(new RuntimeException("Client request timed out"))(20.seconds)
               form     <- response.body.asMultipartForm
@@ -183,9 +183,9 @@ object ClientStreamingSpec extends RoutesRunnableSpec {
                   Request
                     .post(
                       URL.decode(s"http://localhost:$port/form").toOption.get,
-                      Body.fromChunk(bytes),
+                      Body.fromChunk(bytes)
                     )
-                    .addHeaders(Headers(Header.ContentType(MediaType.multipart.`form-data`, Some(boundary)))),
+                    .addHeaders(Headers(Header.ContentType(MediaType.multipart.`form-data`, Some(boundary))))
                 )
                 .timeoutFail(new RuntimeException("Client request timed out"))(20.seconds)
               form     <- response.body.asMultipartForm
