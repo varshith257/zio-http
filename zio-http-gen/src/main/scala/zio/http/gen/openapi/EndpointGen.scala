@@ -9,7 +9,7 @@ import zio.http.Method
 import zio.http.endpoint.openapi.OpenAPI.ReferenceOr
 import zio.http.endpoint.openapi.{JsonSchema, OpenAPI}
 import zio.http.gen.scala.Code._
-import zio.http.gen.scala.{Code, CodeGen}
+import zio.http.gen.scala.CodeGen._
 
 object EndpointGen {
 
@@ -1325,8 +1325,10 @@ final case class EndpointGen(config: Config) {
                   val baref = ref.replaceFirst("^#/components/schemas/", "")
                   resolveSchemaRef(openAPI, baref) match {
                     case ks: JsonSchema.String =>
-                      if (config.generateSafeTypeAliases) TypeRef(baref + ".Type")
-                      else schemaToField(ks, openAPI, name, annotations).get.fieldType
+                      if (config.generateSafeTypeAliases) {
+                        generateNewtypeFile(baref)
+                        TypeRef(baref + ".Type")
+                      } else schemaToField(ks, openAPI, name, annotations).get.fieldType
                     case nonStringSchema       =>
                       throw new IllegalArgumentException(
                         s"x-string-key-schema must reference a string schema, but got: ${nonStringSchema.toJson}",
@@ -1350,6 +1352,34 @@ final case class EndpointGen(config: Config) {
       case JsonSchema.AnyJson                                                                                         =>
         Some(Code.Field(name, Code.ScalaType.JsonAST, config.fieldNamesNormalization))
     }
+  }
+
+  def generateNewtypeFile(ref: String, basePath: Path, basePackage: String, scalafmtPath: Option[Path]): Unit = {
+    val schema = resolveSchemaRef(openAPI, ref)
+    schema match {
+      case JsonSchema.String(_, _, _, _) =>
+        val (fileName, newtypeCode)    = createNewtypeFile(ref)
+        val files: Map[String, String] = Map(fileName -> newtypeCode)
+
+        writeFiles(files, basePath, basePackage, scalafmtPath)
+
+      case _ =>
+        throw new Exception(s"Newtype generation is only supported for string schemas, but got: $ref")
+    }
+  }
+
+  def createNewtypeFile(ref: String): (String, String) = {
+    val fileName    = s"${ref.capitalize}.scala"
+    val newtypeCode =
+      s"""
+         |package generated
+         |
+         |object ${ref.capitalize} {
+         |  type Type = String
+         |}
+     """.stripMargin
+
+    (fileName, newtypeCode)
   }
 
 }
