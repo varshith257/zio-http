@@ -14,7 +14,7 @@ import zio.http._
 
 private[cli] sealed trait Retriever {
 
-  def retrieve(): ZIO[Client, Throwable, FormField]
+  def retrieve(): ZIO[Client with Scope, Throwable, FormField]
 
 }
 
@@ -27,11 +27,12 @@ private[cli] object Retriever {
   final case class URL(name: String, url: String, mediaType: MediaType) extends Retriever {
 
     val request                                                           = Request.get(http.URL(http.Path.decode(url)))
-    override def retrieve(): ZIO[Client with Scope, Throwable, FormField] =
+    override def retrieve(): ZIO[Client with Scope, Throwable, FormField] = ZIO.scoped {
       for {
         client <- ZIO.serviceWith[Client](_.batched)
         chunk  <- client.streaming(request).flatMap(_.body.asChunk)
       } yield FormField.binaryField(name, chunk, mediaType)
+    }
   }
 
   final case class File(name: String, path: Path, mediaType: MediaType) extends Retriever {
