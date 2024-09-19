@@ -29,7 +29,7 @@ private[cli] object Retriever {
     val request                                                = Request.get(http.URL(http.Path.decode(url)))
     override def retrieve(): ZIO[Client, Throwable, FormField] = for {
       client <- ZIO.serviceWith[Client](_.batched)
-      chunk  <- client.request(request).flatMap(_.body.asChunk)
+      chunk  <- client.batched(request).flatMap(_.body.asChunk)
     } yield FormField.binaryField(name, chunk, mediaType)
   }
 
