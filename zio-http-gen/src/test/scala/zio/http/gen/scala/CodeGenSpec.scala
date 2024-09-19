@@ -889,7 +889,8 @@ object CodeGenSpec extends ZIOSpecDefault {
         }
       } @@ TestAspect.exceptScala3,
       test("Additional aliased referenced properties") {
-        val openAPIString = stringFromResource("/inline_schema_constrained_keys_map.yaml")
+        val openAPIString              = stringFromResource("/inline_schema_constrained_keys_map.yaml")
+        val scalafmtPath: Option[Path] = Some(Paths.get(".scalafmt.conf"))
 
         openApiFromYamlString(openAPIString) { oapi =>
           codeGenFromOpenAPI(oapi, Config.default.copy(generateSafeTypeAliases = true)) { testDir =>
@@ -972,6 +973,30 @@ object CodeGenSpec extends ZIOSpecDefault {
               testDir,
               "component/Order.scala",
               "/ComponentOrderWithNormalizedFieldNames.scala",
+            )
+          }
+        }
+      } @@ TestAspect.exceptScala3,
+      test("Aliased type in key schema generates Newtype file") {
+        val openAPIString              = stringFromResource("/inline_schema_aliased_type_in_key_schema.yaml")
+        val scalafmtPath: Option[Path] = Some(Paths.get(".scalafmt.conf"))
+
+        openApiFromYamlString(openAPIString) { oapi =>
+          codeGenFromOpenAPI(oapi, Config.default.copy(generateSafeTypeAliases = true)) { testDir =>
+            allFilesShouldBe(
+              testDir.toFile,
+              List(
+                "component/KeyAlias.scala",
+                "component/ObjectWithDictionary.scala",
+              ),
+            ) && fileShouldBe(
+              testDir,
+              "component/KeyAlias.scala",
+              "/ComponentKeyAlias.scala",
+            ) && fileShouldBe(
+              testDir,
+              "component/ObjectWithDictionary.scala",
+              "/ComponentObjectWithDictionary.scala",
             )
           }
         }

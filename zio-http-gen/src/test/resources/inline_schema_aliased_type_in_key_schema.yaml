@@ -1,0 +1,29 @@
+openapi: 3.0.3
+info:
+  title: Aliased Type Key Schema Test
+  version: 1.0.0
+paths:
+  /api/v1/dictionary:
+    get:
+      operationId: getDictionary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DictionaryResponse"
+components:
+  schemas:
+    KeyAlias:
+      type: string
+      format: uuid
+    ObjectWithDictionary:
+      type: object
+      properties:
+        dictionary:
+          type: object
+          additionalProperties:
+            type: string
+            x-string-key-schema:
+              $ref: "#/components/schemas/KeyAlias"

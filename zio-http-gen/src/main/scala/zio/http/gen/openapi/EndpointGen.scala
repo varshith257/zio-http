@@ -1395,7 +1395,7 @@ final case class EndpointGen(config: Config) {
         val updatedFiles   = generatedFiles + (fileName -> newtypeCode)
 
         val codeFiles = Code.Files(
-          updatedFiles.map { case (path, content) =>
+          updatedFiles.map { case (path, _) =>
             Code.File(
               path = path.split("/").toList,
               pkgPath = List("generated"),
