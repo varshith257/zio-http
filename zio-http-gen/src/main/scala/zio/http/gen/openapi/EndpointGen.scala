@@ -1390,7 +1390,7 @@ final case class EndpointGen(config: Config) {
           ),
         )
 
-        val generatedFiles = CodeGen.renderFiles(files, basePackage)
+        val generatedFiles = CodeGen.renderedFiles(files, basePackage)
         val renderedFiles  = generatedFiles + (fileName -> newtypeCode)
 
         CodeGen.writeFiles(renderedFiles, basePath, basePackage, scalafmtPath)
