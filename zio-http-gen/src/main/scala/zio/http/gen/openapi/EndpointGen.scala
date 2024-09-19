@@ -1,5 +1,8 @@
 package zio.http.gen.openapi
 
+import java.nio.file._
+import java.nio.file.StandardOpenOption._
+import java.nio.charset.StandardCharsets
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
@@ -1326,7 +1329,7 @@ final case class EndpointGen(config: Config) {
                   resolveSchemaRef(openAPI, baref) match {
                     case ks: JsonSchema.String =>
                       if (config.generateSafeTypeAliases) {
-                        generateNewtypeFile(baref)
+                        generateNewtypeFile(baref, openAPI, basePath, basePackage, scalafmtPath)
                         TypeRef(baref + ".Type")
                       } else schemaToField(ks, openAPI, name, annotations).get.fieldType
                     case nonStringSchema       =>
@@ -1354,14 +1357,32 @@ final case class EndpointGen(config: Config) {
     }
   }
 
-  def generateNewtypeFile(ref: String, basePath: Path, basePackage: String, scalafmtPath: Option[Path]): Unit = {
+  def generateNewtypeFile(
+    ref: String,
+    openAPI: OpenAPI,
+    basePath: Path,
+    basePackage: String,
+    scalafmtPath: Option[Path],
+  ): Unit = {
     val schema = resolveSchemaRef(openAPI, ref)
     schema match {
       case JsonSchema.String(_, _, _, _) =>
-        val (fileName, newtypeCode)    = createNewtypeFile(ref)
-        val files: Map[String, String] = Map(fileName -> newtypeCode)
+        val (fileName, newtypeCode) = createNewtypeFile(ref)
+        val files: Code.Files       = Code.Files(
+          List(
+            Code.File(
+              path = List(fileName),
+              imports = Nil,
+              objects = Nil,
+              caseClasses = Nil,
+              enums = Nil,
+            ),
+          ),
+        )
 
-        CodeGen.writeFiles(files, basePath, basePackage, scalafmtPath)
+        val renderedFiles = renderedFiles(files, basePackage) + (fileName -> newtypeCode)
+
+        CodeGen.writeFiles(renderedFiles, basePath, basePackage, scalafmtPath)
 
       case _ =>
         throw new Exception(s"Newtype generation is only supported for string schemas, but got: $ref")
