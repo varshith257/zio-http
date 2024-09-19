@@ -38,7 +38,7 @@ final case class ZClient[-Env, ReqEnv, -In, +Err, +Out](
   driver: ZClient.Driver[Env, ReqEnv, Err],
 ) extends HeaderOps[ZClient[Env, ReqEnv, In, Err, Out]] { self =>
   def apply(request: Request)(implicit ev: Body <:< In, trace: Trace): ZIO[Env & ReqEnv, Err, Out] =
-    self.batched(request)
+    self.request(request)
 
   override def updateHeaders(update: Headers => Headers)(implicit trace: Trace): ZClient[Env, ReqEnv, In, Err, Out] =
     copy(headers = update(headers))
@@ -302,7 +302,7 @@ object ZClient extends ZClientPlatformSpecific {
    *   memory, allowing to stream response bodies
    */
   def batched(request: Request)(implicit trace: Trace): ZIO[Client, Throwable, Response] =
-    ZIO.serviceWithZIO[Client](_.batched.batched(request))
+    ZIO.serviceWithZIO[Client](_.batched(request))
 
   def fromDriver[Env, ReqEnv, Err](driver: Driver[Env, ReqEnv, Err]): ZClient[Env, ReqEnv, Body, Err, Response] =
     ZClient(
