@@ -178,8 +178,7 @@ object ClientStreamingSpec extends RoutesRunnableSpec {
               boundary <- Boundary.randomUUID
               stream = Form(fields.map(_._1): _*).multipartBytes(boundary)
               bytes    <- stream.runCollect
-              response <- client.batched
-                (
+              response <- client.batched(
                   Request
                     .post(
                       URL.decode(s"http://localhost:$port/form").toOption.get,
