@@ -51,7 +51,7 @@ final case class EndpointGen(config: Config) {
 
   val basePath: Path                                   = Paths.get("src/main/scala")
   val basePackage: String                              = "com.example.generated"
-  val scalafmtPath: Option[Path]                       = Some(Paths.get(".scalafmt.conf"))
+  val scalafmtPath: Option[Path]                       = Some(Paths.get("/test/resources/scalafmt.conf"))
   private var anonymousTypes: Map[String, Code.Object] = Map.empty[String, Code.Object]
 
   object OneOfAllReferencesAsSimpleNames {
