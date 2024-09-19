@@ -1391,9 +1391,22 @@ final case class EndpointGen(config: Config) {
         )
 
         val generatedFiles = CodeGen.renderedFiles(files, basePackage)
-        val renderedFiles  = generatedFiles + (fileName -> newtypeCode)
+        val updatedFiles   = generatedFiles + (fileName -> newtypeCode)
 
-        CodeGen.writeFiles(renderedFiles, basePath, basePackage, scalafmtPath)
+        val codeFiles = Code.Files(
+          updatedFiles.map { case (path, content) =>
+            Code.File(
+              path = path.split("/").toList,
+              pkgPath = List("generated"),
+              imports = Nil,
+              objects = Nil,
+              caseClasses = Nil,
+              enums = Nil,
+            )
+          }.toList,
+        )
+
+        CodeGen.writeFiles(codeFiles, basePath, basePackage, scalafmtPath)
 
       case _ =>
         throw new Exception(s"Newtype generation is only supported for string schemas, but got: $ref")
