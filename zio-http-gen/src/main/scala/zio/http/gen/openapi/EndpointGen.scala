@@ -48,6 +48,9 @@ object EndpointGen {
 final case class EndpointGen(config: Config) {
   import EndpointGen._
 
+  val basePath: Path                                   = Paths.get("src/main/scala")
+  val basePackage: String                              = "com.example.generated"
+  val scalafmtPath: Option[Path]                       = Some(Paths.get(".scalafmt.conf"))
   private var anonymousTypes: Map[String, Code.Object] = Map.empty[String, Code.Object]
 
   object OneOfAllReferencesAsSimpleNames {
@@ -1315,7 +1318,13 @@ final case class EndpointGen(config: Config) {
           val (ks, annotations) = JsonSchema.Object.extractKeySchemaFromAnnotations(vs)
           vs.withoutAnnotations.annotate(annotations) -> ks
         }
-
+        // kSchemaOpt.collect { case ss: JsonSchema.String =>
+        //   schemaToField(ss, openAPI, name, annotations).foreach { field =>
+        //     if (config.generateSafeTypeAliases) {
+        //       generateNewtypeFile(ref = baref, openAPI, basePath, basePackage, scalafmtPath)
+        //     }
+        //   }
+        // }
         Some(
           Code.Field(
             name,
@@ -1372,6 +1381,7 @@ final case class EndpointGen(config: Config) {
           List(
             Code.File(
               path = List(fileName),
+              pkgPath = List("generated"),
               imports = Nil,
               objects = Nil,
               caseClasses = Nil,
@@ -1380,7 +1390,8 @@ final case class EndpointGen(config: Config) {
           ),
         )
 
-        val renderedFiles = renderedFiles(files, basePackage) + (fileName -> newtypeCode)
+        val generatedFiles = renderFiles(files, basePackage)
+        val renderedFiles  = generatedFiles + (fileName -> newtypeCode)
 
         CodeGen.writeFiles(renderedFiles, basePath, basePackage, scalafmtPath)
 
