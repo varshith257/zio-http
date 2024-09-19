@@ -1,5 +1,6 @@
 package zio.http.codec
 
+import zio._
 import zio.test._
 import zio.test.Assertion._
 
