@@ -17,7 +17,7 @@ object PathCodecPlatformSpecificSpec extends ZIOSpecDefault {
       val result       = ZIO.attempt {
         new PathCodecPlatformSpecific {}.parseInt(charSequence, 0, charSequence.length, Character.MAX_RADIX + 1)
       }.either
-      assert(result)(isLeft(hasMessage(containsString("radix"))))
+      assertZIO(result)(isLeft(hasMessage(containsString("radix"))))
     },
     test("parseLong should correctly parse a valid long from a CharSequence") {
       val charSequence = "123456789012345"
@@ -29,7 +29,7 @@ object PathCodecPlatformSpecificSpec extends ZIOSpecDefault {
       val result       = ZIO.attempt {
         new PathCodecPlatformSpecific {}.parseLong(charSequence, 0, charSequence.length, 10)
       }.either
-      assert(result)(isLeft(hasMessage(containsString("Error at index"))))
+      assertZIO(result)(isLeft(hasMessage(containsString("Error at index"))))
     },
   )
 }
