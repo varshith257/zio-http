@@ -95,9 +95,9 @@ object ZClientAspectSpec extends ZIOHttpSpec {
               URL(Path.empty, Location.Absolute(Scheme.HTTP, "localhost", Some(port))),
             )
             .batched @@ ZClientAspect.followRedirects(2)((resp, message) => ZIO.logInfo(message).as(resp))
-          response <- ZIO.scoped {
+          response <-
             client.batched(Request.get(URL.decode(s"http://localhost:$port/redirect").toOption.get))
-          }
+
         } yield assertTrue(
           extractStatus(response) == Status.Ok,
         ),
@@ -105,6 +105,7 @@ object ZClientAspectSpec extends ZIOHttpSpec {
     ).provide(
       ZLayer.succeed(Server.Config.default.onAnyOpenPort),
       Server.customized,
+      Scope.default,
       ZLayer.succeed(NettyConfig.defaultWithFastShutdown),
       Client.default,
     ) @@ withLiveClock
