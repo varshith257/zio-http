@@ -48,23 +48,23 @@ object HandlerAspectSpec extends ZIOSpecDefault {
       },
       // format: on
       test("HandlerAspect can handle path parameters and context") {
-        val maybeWebSession: HandlerAspect[Any, Option[Int]] =
-          HandlerAspect.interceptIncomingHandler {
-            handler((req: Request) => (req, Some(req.headers.size)))
-          }
+        case class WebSession(id: Int)
 
-        val handlerWithPathParam = handler { (pathParam: String, req: Request) =>
-          withContext((session: Option[Int]) =>
-            ZIO.succeed(Response.text(s"Path: $pathParam, Session: $session"))
+        def maybeWebSession: HandlerAspect[Any, Option[WebSession]] =
+          HandlerAspect.interceptIncomingHandler(
+            Handler.fromFunctionZIO[Request] { req =>
+              ZIO.succeed((req, None))
+            },
           )
-        } @@ maybeWebSession
 
-        val testRequest = Request(headers = Headers("accept", "*"))
-
-        for {
-          response   <- handlerWithPathParam(("12345", testRequest))
-          bodyString <- response.body.asString
-        } yield assertTrue(bodyString == "Path: 12345, Session: Some(1)")
-      }
+        val route = (Method.GET / "base" / string("1") -> handler((_: String, _: Request) => {
+          withContext((_: Option[WebSession]) => {
+            ZIO.logInfo("Hello").as(Response.ok)
+          })
+        })) @@ maybeWebSession
+        route(Request.get(url"/base/1")).map { response =>
+          assertTrue(extractStatus(response) == Status.Ok)
+        }
+      },
     )
 }
