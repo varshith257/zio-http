@@ -1,11 +1,12 @@
 package zio.http.codec
 
-import java.util.Objects
-
 trait PathCodecPlatformSpecific {
   private[codec] def parseLong(s: CharSequence, beginIndex: Int, endIndex: Int, radix: Int): Long = {
-    Objects.requireNonNull(s)
-    Objects.checkFromToIndex(beginIndex, endIndex, s.length)
+    require(s != null, "CharSequence 's' must not be null")
+    require(
+      beginIndex >= 0 && endIndex <= s.length && beginIndex <= endIndex,
+      s"Invalid indices: beginIndex=$beginIndex, endIndex=$endIndex, length=${s.length}",
+    )
     if (radix < Character.MIN_RADIX)
       throw new NumberFormatException("radix " + radix + " less than Character.MIN_RADIX")
     if (radix > Character.MAX_RADIX)
@@ -42,8 +43,11 @@ trait PathCodecPlatformSpecific {
   }
 
   private[codec] def parseInt(s: CharSequence, beginIndex: Int, endIndex: Int, radix: Int): Int = {
-    Objects.requireNonNull(s)
-    Objects.checkFromToIndex(beginIndex, endIndex, s.length)
+    require(s != null, "CharSequence 's' must not be null")
+    require(
+      beginIndex >= 0 && endIndex <= s.length && beginIndex <= endIndex,
+      s"Invalid indices: beginIndex=$beginIndex, endIndex=$endIndex, length=${s.length}",
+    )
     if (radix < Character.MIN_RADIX)
       throw new NumberFormatException("radix " + radix + " less than Character.MIN_RADIX")
     if (radix > Character.MAX_RADIX)
