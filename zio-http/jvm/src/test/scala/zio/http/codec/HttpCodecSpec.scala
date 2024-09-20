@@ -144,6 +144,8 @@ object HttpCodecSpec extends ZIOHttpSpec {
             } yield assertTrue(result.isEmpty)
           } +
           test("fallback for empty body") {
+            implicit val stringSchema: Schema[String] = Schema[String] // Provide implicit schema for String
+
             val codec                = ContentCodec.content[String].optionalBody
             val requestWithEmptyBody = Request.post(url = URL.root, body = Body.empty)
 
