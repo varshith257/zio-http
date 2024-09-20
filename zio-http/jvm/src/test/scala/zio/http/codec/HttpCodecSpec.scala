@@ -133,25 +133,21 @@ object HttpCodecSpec extends ZIOHttpSpec {
             } yield assertTrue(result.isFailure)
           } +
           test("fallback for missing body") {
-            val codec = HttpCodec.body[Unit]
+            val codec = ContentCodec.content(HttpCodec.empty.const(())).optional
 
             val requestWithMissingBody = Request.get(url = URL.root)
 
-            val optional = codec.optional
-
             for {
-              result <- optional.decodeRequest(requestWithMissingBody)
+              result <- codec.decodeRequest(requestWithMissingBody)
             } yield assertTrue(result.isEmpty)
           } +
           test("fallback for empty body") {
-            val codec = HttpCodec.body[String]
+            val codec = ContentCodec.content(HttpCodec.empty.const("")).optional
 
             val requestWithEmptyBody = Request.post(url = URL.root, body = Body.empty)
 
-            val optional = codec.optional
-
             for {
-              result <- optional.decodeRequest(requestWithEmptyBody)
+              result <- codec.decodeRequest(requestWithEmptyBody)
             } yield assertTrue(result.isEmpty)
           }
       } +
