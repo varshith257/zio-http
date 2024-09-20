@@ -42,8 +42,6 @@ object HttpCodecSpec extends ZIOHttpSpec {
   val codecBool                       = HttpCodec.query[Boolean](isAge)
   def makeRequest(paramValue: String) = Request.get(googleUrl.setQueryParams(QueryParams(isAge -> paramValue)))
 
-  implicit val stringSchema: Schema[String] = Schema[String]
-
   def spec = suite("HttpCodecSpec")(
     suite("fallback") {
       test("query fallback") {
