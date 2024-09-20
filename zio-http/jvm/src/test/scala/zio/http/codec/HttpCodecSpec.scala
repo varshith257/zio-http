@@ -42,8 +42,7 @@ object HttpCodecSpec extends ZIOHttpSpec {
   val codecBool                       = HttpCodec.query[Boolean](isAge)
   def makeRequest(paramValue: String) = Request.get(googleUrl.setQueryParams(QueryParams(isAge -> paramValue)))
 
-  implicit val unitHttpContentCodec: HttpContentCodec[Unit]     = HttpContentCodec.empty
-  implicit val stringHttpContentCodec: HttpContentCodec[String] = HttpContentCodec.fromSchema(Schema[String])
+  implicit val stringSchema: Schema[String] = Schema[String]
 
   def spec = suite("HttpCodecSpec")(
     suite("fallback") {
@@ -136,22 +135,14 @@ object HttpCodecSpec extends ZIOHttpSpec {
               result <- optional.decodeRequest(request).exit
             } yield assertTrue(result.isFailure)
           } +
-          test("fallback for missing body") {
-            val codec                  = ContentCodec.content[Unit](unitSchema).optionalBody
-            val requestWithMissingBody = Request.get(url = URL.root)
 
-            for {
-              result <- codec.decodeRequest(requestWithMissingBody)
-            } yield assertTrue(result.isEmpty)
-          } +
-          test("fallback for empty body") {
-            val codec                = ContentCodec.content[String](stringSchema).optionalBody
-            val requestWithEmptyBody = Request.post(url = URL.root, body = Body.empty)
-
-            for {
-              result <- codec.decodeRequest(requestWithEmptyBody)
-            } yield assertTrue(result.isEmpty)
-          }
+        test("fallback for empty body") {
+          val codec                = ContentCodec.content[String].optionalBody
+          val requestWithEmptyBody = Request.post(url = URL.root, body = Body.empty)
+          for {
+            result <- codec.decodeRequest(requestWithEmptyBody)
+          } yield assertTrue(result.isEmpty)
+        }
       } +
       suite("HeaderCodec") {
         test("dummy test") {
