@@ -63,6 +63,9 @@ object HttpCodecError {
   final case class InvalidEntity(details: String, cause: Chunk[ValidationError] = Chunk.empty) extends HttpCodecError {
     def message = s"A well-formed entity failed validation: $details"
   }
+  final case object MissingBody                                                     extends HttpCodecError {
+    def message = "Request body is missing"
+  }
   object InvalidEntity {
     def wrap(errors: Chunk[ValidationError]): InvalidEntity =
       InvalidEntity(
@@ -70,10 +73,10 @@ object HttpCodecError {
         errors,
       )
   }
-  final case class InvalidQueryParamCount(name: String, expected: Int, actual: Int)            extends HttpCodecError {
+  final case class InvalidQueryParamCount(name: String, expected: Int, actual: Int) extends HttpCodecError {
     def message = s"Invalid query parameter count for $name: expected $expected but found $actual."
   }
-  final case class CustomError(name: String, message: String)                                  extends HttpCodecError
+  final case class CustomError(name: String, message: String)                       extends HttpCodecError
 
   final case class UnsupportedContentType(contentType: String) extends HttpCodecError {
     def message = s"Unsupported content type $contentType"
@@ -94,4 +97,13 @@ object HttpCodecError {
     !cause.isFailure && cause.defects.forall(e =>
       e.isInstanceOf[HttpCodecError.MissingHeader] || e.isInstanceOf[HttpCodecError.MissingQueryParam],
     )
+
+  def isMissingBodyOrEmpty(cause: Cause[Any]): Boolean = {
+    !cause.isFailure && cause.defects.exists {
+      case HttpCodecError.MalformedBody(details, _) if details.contains("end of input") => true
+      case HttpCodecError.MissingBody                                                   => true
+      case _                                                                            => false
+    }
+  }
+
 }
