@@ -276,11 +276,9 @@ sealed trait HttpCodec[-AtomTypes, Value] {
           Alternator.either,
           HttpCodec.Fallback.Condition.isBodyEmptyOrMissing,
         )
-        .transform[Option[A]](either =>
-          either.fold(Some(_), _ => None), // If body exists, wrap it in Some, otherwise return None
-        ) {
-          case Some(value) => Right(Some(value)) // Return Some(value) to keep it as Option[A]
-          case None        => Right(None)        // If None, return None
+        .transform[Option[A]](either => either.fold(Some(_), _ => None)) {
+          case Some(value) => Right(Some(value))
+          case None        => Right(None)
         },
       Metadata.Optional(),
     )
