@@ -279,8 +279,8 @@ sealed trait HttpCodec[-AtomTypes, Value] {
         .transform[Option[A]](either =>
           either.fold(Some(_), _ => None), // If body exists, wrap it in Some, otherwise return None
         ) {
-          case Some(value) => Right(value) // Encode Some(value)
-          case None        => Right(())    // If None, encode an empty body
+          case Some(value) => Right(Some(value)) // Return Some(value) to keep it as Option[A]
+          case None        => Right(None)        // If None, return None
         },
       Metadata.Optional(),
     )
