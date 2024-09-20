@@ -277,11 +277,11 @@ sealed trait HttpCodec[-AtomTypes, Value] {
           HttpCodec.Fallback.Condition.isBodyEmptyOrMissing,
         )
         .transform[Option[A]](either =>
-          either.fold(Some(_), _ => None), // If we get data, wrap it in Some. Otherwise, return None.
-        )(_ match {
-          case Some(value) => Right(value)            // Unwrap Some(value) and proceed with encoding
-          case None        => Left("Body is missing") // Handle the case where the body is None
-        }),
+          either.fold(Some(_), _ => None), // If body exists, wrap it in Some, otherwise return None
+        ) {
+          case Some(value) => Right(value) // Encode Some(value)
+          case None        => Right(())    // If None, encode an empty body
+        },
       Metadata.Optional(),
     )
 
