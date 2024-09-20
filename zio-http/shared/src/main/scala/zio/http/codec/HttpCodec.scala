@@ -267,6 +267,19 @@ sealed trait HttpCodec[-AtomTypes, Value] {
   def named(named: Metadata.Named[Value]): HttpCodec[AtomTypes, Value] =
     HttpCodec.Annotated(self, Metadata.Named(named.name))
 
+  def optionalBody[A](implicit schema: Schema[A]): HttpCodec[HttpCodecType.Content, Option[A]] =
+    Annotated(
+      HttpCodec
+        .Fallback(
+          ContentCodec.content[A],
+          HttpCodec.empty.asInstanceOf[HttpCodec[HttpCodecType.Content, Option[A]]],
+          Alternator.either,
+          HttpCodec.Fallback.Condition.isBodyEmptyOrMissing,
+        )
+        .transform[Option[A]](either => either.fold(Some(_), _ => None))(_.toLeft(())),
+      Metadata.Optional(),
+    )
+
   /**
    * Returns a new codec, where the value produced by this one is optional.
    */
