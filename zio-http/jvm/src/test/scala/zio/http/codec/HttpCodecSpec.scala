@@ -136,7 +136,7 @@ object HttpCodecSpec extends ZIOHttpSpec {
             } yield assertTrue(result.isFailure)
           } +
           test("fallback for empty body") {
-            val codec                = ContentCodec.content[String](stringSchema).optionalBody
+            val codec                = ContentCodec.content[String].optionalBody
             val requestWithEmptyBody = Request.post(url = URL.root, body = Body.empty)
 
             for {
