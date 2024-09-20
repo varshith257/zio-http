@@ -63,7 +63,7 @@ object HttpCodecError {
   final case class InvalidEntity(details: String, cause: Chunk[ValidationError] = Chunk.empty) extends HttpCodecError {
     def message = s"A well-formed entity failed validation: $details"
   }
-  final case object MissingBody                                                                extends HttpCodecError {
+  case object MissingBody                                                                      extends HttpCodecError {
     def message = "Request body is missing"
   }
   object InvalidEntity {
