@@ -11,7 +11,11 @@ import zio._
  * @param bindPort
  *   Port for HTTP interactions
  */
-final case class TestServer(driver: Driver, bindPort: Int) extends Server {
+final case class TestServer(
+  driver: Driver,
+  bindPort: Int,
+  routeEnvironmentPairs: Ref[List[(Routes[Any, Response], ZEnvironment[Any])]],
+) extends Server {
 
   /**
    * Define 1-1 mappings between incoming Requests and outgoing Responses
@@ -71,6 +75,7 @@ final case class TestServer(driver: Driver, bindPort: Int) extends Server {
       provided                      = route.provideEnvironment(r)
       routes: Routes[Any, Response] = provided.toRoutes
       _ <- driver.addApp(routes, r)
+      _ <- routeEnvironmentPairs.update((routes, r) :: _)
       _ <- refreshRoutes()
     } yield ()
 
@@ -94,6 +99,7 @@ final case class TestServer(driver: Driver, bindPort: Int) extends Server {
       r <- ZIO.environment[R]
       provided: Routes[Any, Response] = routes.provideEnvironment(r)
       _ <- driver.addApp(provided, r)
+      _ <- routeEnvironmentPairs.update((provided, r) :: _)
       _ <- refreshRoutes()
     } yield ()
 
