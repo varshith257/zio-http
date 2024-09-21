@@ -106,6 +106,32 @@ object TestServerSpec extends ZIOHttpSpec {
       TestServer.layer,
       Scope.default,
     ),
+    suite("Environment updates")(
+      test("should use updated environment for each request") {
+        check(Gen.fromIterable(List(1, 2, 3, 4, 5))) { code =>
+          for {
+            client <- ZIO.service[Client]
+            server <- ZIO.service[TestServer]
+            port   <- server.port
+            url     = URL.root.port(port) / "api"
+            request = Request
+                        .get(url)
+                        .addHeader(Header.Accept(MediaType.application.json))
+            _      <- TestServer.addRoutes(Routes(
+                        Method.GET / "api" -> handler(ZIO.serviceWith[TestEnv](env => Response.text(env.code.toString)))
+                      )).provideSome[TestServer](ZLayer.succeed(TestEnv(code)))
+            response <- client.request(request)
+            body     <- response.body.asString
+          } yield assertTrue(body == code.toString)
+        }
+      }
+    ).provideSome[Scope](
+      ZLayer.succeed(Server.Config.default.onAnyOpenPort),
+      TestServer.layer,
+      Client.default,
+      NettyDriver.customized,
+      ZLayer.succeed(NettyConfig.defaultWithFastShutdown)
+    )
   ).provide(
     ZLayer.succeed(Server.Config.default.onAnyOpenPort),
     Client.default,
@@ -120,4 +146,5 @@ object TestServerSpec extends ZIOHttpSpec {
       .get(url = URL.root.port(port))
       .addHeaders(Headers(Header.Accept(MediaType.text.`plain`)))
 
+  case class TestEnv(code: Int)
 }
