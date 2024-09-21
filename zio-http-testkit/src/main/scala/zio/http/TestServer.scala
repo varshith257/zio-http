@@ -135,10 +135,4 @@ object TestServer {
         result <- driver.start
       } yield TestServer(driver, result.port)
     }
-
-  val simple: ZLayer[Any, Nothing, TestServer with Server] = {
-    val serverLayer = ZLayer.succeed(Server.Config.default.onAnyOpenPort) >>> Server.live
-    val driverLayer = Driver.default >>> TestServer.layer
-    driverLayer ++ serverLayer
-  }
 }
