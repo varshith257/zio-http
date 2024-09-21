@@ -151,6 +151,7 @@ object TestServer {
       for {
         driver <- ZIO.service[Driver]
         result <- driver.start
+        ref    <- Ref.make(List.empty[(Routes[Any, Response], ZEnvironment[Any])])
       } yield TestServer(driver, result.port, ref)
     }
 }
