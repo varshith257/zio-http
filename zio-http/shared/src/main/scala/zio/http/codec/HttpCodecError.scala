@@ -66,6 +66,9 @@ object HttpCodecError {
   case object MissingBody                                                                      extends HttpCodecError {
     def message = "Request body is missing"
   }
+  case object EmptyBody                                                                        extends HttpCodecError {
+    def message: String = "Empty request body"
+  }
   object InvalidEntity {
     def wrap(errors: Chunk[ValidationError]): InvalidEntity =
       InvalidEntity(
@@ -102,6 +105,7 @@ object HttpCodecError {
     !cause.isFailure && cause.defects.exists {
       case HttpCodecError.MalformedBody(details, _) if details.contains("end of input") => true
       case HttpCodecError.MissingBody                                                   => true
+      case HttpCodecError.EmptyBody                                                     => true
       case _                                                                            => false
     }
   }

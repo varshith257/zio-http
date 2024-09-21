@@ -269,9 +269,6 @@ object HttpContentCodec {
   ): HttpContentCodec[A] =
     HttpContentCodec.Choices(ListMap((codec +: codecs): _*))
 
-  case object EmptyBody extends HttpCodecError {
-    def message: String = "Empty request body"
-  }
   implicit def fromSchema[A](implicit schema: Schema[A]): HttpContentCodec[A] = {
     if (fromSchemaCache.contains(schema)) {
       fromSchemaCache(schema).asInstanceOf[HttpContentCodec[A]]
