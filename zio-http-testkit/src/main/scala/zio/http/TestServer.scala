@@ -42,6 +42,8 @@ final case class TestServer(driver: Driver, bindPort: Int) extends Server {
     })
   }
 
+  private var routeEnvironmentPairs: List[(Routes[Any, Response], ZEnvironment[Any])] = List.empty
+
   /**
    * Adds a new route to the Server
    *
@@ -71,6 +73,7 @@ final case class TestServer(driver: Driver, bindPort: Int) extends Server {
       provided                      = route.provideEnvironment(r)
       routes: Routes[Any, Response] = provided.toRoutes
       _ <- driver.addApp(routes, r)
+      _ = routeEnvironmentPairs = (routes, r) :: routeEnvironmentPairs // Store route and its environment
     } yield ()
 
   /**
@@ -93,7 +96,16 @@ final case class TestServer(driver: Driver, bindPort: Int) extends Server {
       r <- ZIO.environment[R]
       provided: Routes[Any, Response] = routes.provideEnvironment(r)
       _ <- driver.addApp(provided, r)
+      _ = routeEnvironmentPairs = (provided, r) :: routeEnvironmentPairs // Store the routes and environment
     } yield ()
+
+  /**
+   * Dynamically refreshes all the stored routes with the latest environment
+   */
+  def refreshRoutes(): ZIO[Any, Nothing, Unit] =
+    ZIO.foreachDiscard(routeEnvironmentPairs) { case (routes, env) =>
+      driver.addApp(routes, env) // Re-add the routes with their environment
+    }
 
   override def install[R](routes: Routes[R, Response])(implicit
     trace: zio.Trace,
