@@ -151,6 +151,6 @@ object TestServer {
       for {
         driver <- ZIO.service[Driver]
         result <- driver.start
-      } yield TestServer(driver, result.port)
+      } yield TestServer(driver, result.port, ref)
     }
 }
