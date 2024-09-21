@@ -141,6 +141,7 @@ object TestServerSpec extends ZIOHttpSpec {
     Client.default,
     NettyDriver.customized,
     ZLayer.succeed(NettyConfig.defaultWithFastShutdown),
+    Scope.default,
   )
 
   private def requestToCorrectPort =

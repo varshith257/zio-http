@@ -20,7 +20,6 @@ import java.util.UUID
 
 import zio._
 import zio.test._
-import zio.schema.Schema
 
 import zio.http._
 
