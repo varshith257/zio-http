@@ -878,8 +878,10 @@ object HttpCodec extends ContentCodecs with HeaderCodecs with MethodCodecs with 
     object Condition       {
       case object IsHttpCodecError     extends Condition
       case object isMissingDataOnly    extends Condition
-      case object isBodyEmptyOrMissing extends Condition
-
+      case object isBodyEmptyOrMissing extends Condition {
+        def apply(cause: Cause[Any]): Boolean =
+          HttpCodecError.isMissingBodyOrEmpty(cause)
+      }
     }
   }
 
