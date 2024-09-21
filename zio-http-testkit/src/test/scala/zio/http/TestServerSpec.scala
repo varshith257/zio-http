@@ -123,7 +123,7 @@ object TestServerSpec extends ZIOHttpSpec {
                   Method.GET / "api" -> handler(ZIO.serviceWith[TestEnv](env => Response.text(env.code.toString))),
                 ),
               )
-              .provideSome[TestServer](ZLayer.succeed(TestEnv(code)))
+              .provideSomeLayer[TestServer](ZLayer.succeed(TestEnv(code)))
             response <- client.request(request)
             body     <- response.body.asString
           } yield assertTrue(body == code.toString)
