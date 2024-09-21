@@ -115,23 +115,27 @@ object TestServerSpec extends ZIOHttpSpec {
             port   <- server.port
             url     = URL.root.port(port) / "api"
             request = Request
-                        .get(url)
-                        .addHeader(Header.Accept(MediaType.application.json))
-            _      <- TestServer.addRoutes(Routes(
-                        Method.GET / "api" -> handler(ZIO.serviceWith[TestEnv](env => Response.text(env.code.toString)))
-                      )).provideSome[TestServer](ZLayer.succeed(TestEnv(code)))
+              .get(url)
+              .addHeader(Header.Accept(MediaType.application.json))
+            _        <- TestServer
+              .addRoutes(
+                Routes(
+                  Method.GET / "api" -> handler(ZIO.serviceWith[TestEnv](env => Response.text(env.code.toString))),
+                ),
+              )
+              .provideSome[TestServer](ZLayer.succeed(TestEnv(code)))
             response <- client.request(request)
             body     <- response.body.asString
           } yield assertTrue(body == code.toString)
         }
-      }
+      },
     ).provideSome[Scope](
       ZLayer.succeed(Server.Config.default.onAnyOpenPort),
       TestServer.layer,
       Client.default,
       NettyDriver.customized,
-      ZLayer.succeed(NettyConfig.defaultWithFastShutdown)
-    )
+      ZLayer.succeed(NettyConfig.defaultWithFastShutdown),
+    ),
   ).provide(
     ZLayer.succeed(Server.Config.default.onAnyOpenPort),
     Client.default,
