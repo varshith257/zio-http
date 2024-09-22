@@ -131,6 +131,7 @@ jobs:
       # Step 11: Run HTTP Conformance Tests
       - name: Set Up Jetty Base and Enable HTTP/2
         run: |
+          cd http-conformance/testbed
           # Ensure Jetty has a base directory and necessary configuration with root permissions
           docker exec --user root testbed-jetty-1 bash -c "mkdir -p /usr/local/jetty-base && cp -r /usr/local/jetty/etc /usr/local/jetty-base/"
           # Add necessary Jetty modules with root permissions
