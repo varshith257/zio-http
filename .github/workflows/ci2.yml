@@ -126,9 +126,9 @@ jobs:
       - name: Start Testbed Servers (Docker Compose)
         run: |
           cd http-conformance/testbed
-          docker-compose up -d
+          docker compose up -d
           echo "Docker Compose services started:"
-          docker-compose ps
+          docker compose ps
 
       # Step 11: Run HTTP Conformance Tests
       - name: Set Up Jetty Base and Enable HTTP/2
@@ -139,7 +139,7 @@ jobs:
           # Add necessary Jetty modules with root permissions
           docker exec --user root testbed-jetty-1 bash -c "java -jar /usr/local/jetty/start.jar --add-to-start=ssl,http2,https,test-keystore"
           # Restart Jetty after enabling modules
-          docker-compose restart jetty
+          docker compose restart jetty
 
       - name: Run HTTP Conformance Tests
         run: |
