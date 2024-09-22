@@ -77,10 +77,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose
           sudo service docker start
+          sleep 10
+          sudo docker ps
 
       - name: Verify Docker Installation
         run: docker --version
-        
+             docker info
+
+
       # Step 8: Install Poetry and Dependencies
       - name: Install Poetry and Dependencies
         run: |
@@ -95,18 +99,27 @@ jobs:
         run: |
           cd http-conformance
           sh fix_dpkt.sh
-  
-      - name: Set Environment Variables for Testbed
-        run: |
+
+          - name: Set All Environment Variables for Testbed
+          run: |
+            echo "openresty_http_port=8080" >> $GITHUB_ENV
+            echo "openresty_https_port=8443" >> $GITHUB_ENV
+            echo "apache_http_port=8081" >> $GITHUB_ENV
+            echo "apache_https_port=8444" >> $GITHUB_ENV
+            echo "nginx_http_port=8082" >> $GITHUB_ENV
+            echo "nginx_https_port=8445" >> $GITHUB_ENV
+            echo "jetty_http_port=8083" >> $GITHUB_ENV
+            echo "jetty_https_port=8446" >> $GITHUB_ENV
             echo "tomcat_http_port=8084" >> $GITHUB_ENV
             echo "tomcat_https_port=8447" >> $GITHUB_ENV
             echo "openlitespeed_http_port=8085" >> $GITHUB_ENV
             echo "openlitespeed_https_port=8448" >> $GITHUB_ENV
-            echo "caddy_http_port=8086" >> $GITHUB_ENV
-            echo "caddy_https_port=8449" >> $GITHUB_ENV
-            echo "node_http_port=8090" >> $GITHUB_ENV
-            echo "traefik_http_port=8091" >> $GITHUB_ENV
-            echo "traefik_https_port=8450" >> $GITHUB_ENV
+            echo "openlitespeed_admin_port=8449" >> $GITHUB_ENV
+            echo "caddy_http_port=8090" >> $GITHUB_ENV
+            echo "caddy_https_port=8450" >> $GITHUB_ENV
+            echo "node_http_port=8091" >> $GITHUB_ENV
+            echo "traefik_http_port=8092" >> $GITHUB_ENV
+            echo "traefik_https_port=8451" >> $GITHUB_ENV
 
       # Step 10: Start Testbed Servers (Docker Compose)
       - name: Start Testbed (Docker Compose)
