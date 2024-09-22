@@ -2,15 +2,15 @@ name: ZIO-HTTP Conformance Testing
 
 on:
   pull_request:
-    branches: ['**']
+    branches: ["**"]
   push:
-    branches: ['**']
+    branches: ["**"]
     tags: [v*]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  JDK_JAVA_OPTIONS: '-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8'
-  SBT_OPTS: '-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8'
+  JDK_JAVA_OPTIONS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
+  SBT_OPTS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
 
 jobs:
   build:
@@ -19,9 +19,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.12.19, 2.13.14, 3.3.3]
-        java:
-          - temurin@17
-          - temurin@21
+        java: [17, 21] # Fixed version notation
+
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
 
