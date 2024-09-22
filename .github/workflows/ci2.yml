@@ -108,6 +108,7 @@ jobs:
           echo "PGHOST=127.0.0.1" >> http-conformance/testbed/.env
           echo "PGUSER=runner" >> http-conformance/testbed/.env
           echo "PGPASSWORD=runnerpassword" >> http-conformance/testbed/.env
+          echo "MATTERMOST_HOOK=http://dummy" >> http-conformance/testbed/.env
 
       - name: Set All Environment Variables for Testbed
         run: |
@@ -158,4 +159,4 @@ jobs:
       - name: Run HTTP Conformance Tests
         run: |
           cd http-conformance
-          poetry run python run_checks.py --mode=local
+          poetry run python run_checks.py --mode=local --max_workers=10
