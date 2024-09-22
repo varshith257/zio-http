@@ -101,13 +101,13 @@ jobs:
           cd http-conformance
           sh fix_dpkt.sh
 
-      - name: Create .env File from Example
+      - name: Create .env File for Testbed
         run: |
-          mv http-conformance/.env.example http-conformance/.env
-          echo "PGPORT=5432" >> http-conformance/.env
-          echo "PGHOST=127.0.0.1" >> http-conformance/.env
-          echo "PGUSER=runner" >> http-conformance/.env
-          echo "PGPASSWORD=runnerpassword" >> http-conformance/.env
+          mv http-conformance/.env.example http-conformance/testbed/.env
+          echo "PGPORT=5432" >> http-conformance/testbed/.env
+          echo "PGHOST=127.0.0.1" >> http-conformance/testbed/.env
+          echo "PGUSER=runner" >> http-conformance/testbed/.env
+          echo "PGPASSWORD=runnerpassword" >> http-conformance/testbed/.env
 
       - name: Set All Environment Variables for Testbed
         run: |
