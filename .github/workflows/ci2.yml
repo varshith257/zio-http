@@ -65,30 +65,35 @@ jobs:
           # sbt test
 
       # Step 6: Run ZIO-HTTP Server in the Background (Use nohup to prevent premature exit)
-      - name: Run ZIO-HTTP Hello World server
+      - name: Run ZIO-HTTP Server
         run: |
-          sbt 'runMain zio.ZIOAppDefault "{
-              import zio._
-              import zio.http._
+          nohup sbt 'runMain zio.ZIOAppDefault "{
+            import zio._
+            import zio.http._
 
-              object HelloWorld extends ZIOAppDefault {
-                val homeRoute = Method.GET / Root -> handler(Response.text(\"Hello World!\"))
-                val jsonRoute = Method.GET / \"json\" -> handler(Response.json(\"{\"greetings\": \"Hello World!\"}\"))
-                val app = Routes(homeRoute, jsonRoute)
+            object HelloWorld extends ZIOAppDefault {
+              val homeRoute = Method.GET / Root -> handler(Response.text(\"Hello World!\"))
+              val jsonRoute = Method.GET / \"json\" -> handler(Response.json(\"{\"greetings\": \"Hello World!\"}\"))
 
-                override val run = Server.serve(app).provide(Server.default)
-              }
+              val app = Routes(homeRoute, jsonRoute)
 
-              HelloWorld.run.exitCode
+              override val run = Server.serve(app).provide(Server.defaultWithPort(8080))
+            }
+
+            HelloWorld.run.exitCode
           }' &
 
-      - name: Wait for ZIO-HTTP server to start
-        run: sleep 10 # Ensure the server starts before running tests
+      # Step 7: Wait for ZIO-HTTP server to start
+      - name: Wait for server startup
+        run: sleep 10 # Wait 10 seconds for the server to fully start
 
+      # Step 8: Check if ZIO-HTTP server is responding
       - name: Check ZIO-HTTP server
         run: |
-          curl http://localhost:8080/hello   # Check the plain text route
-          curl http://localhost:8080/json    # Check the JSON route
+          for i in {1..30}; do
+            curl http://localhost:8080/hello && break
+            sleep 5
+          done
 
       # Step 7: Install Docker and Docker Compose (needed for local servers)
       - name: Install Docker
