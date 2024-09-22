@@ -100,8 +100,8 @@ jobs:
           cd http-conformance
           sh fix_dpkt.sh
 
-          - name: Set All Environment Variables for Testbed
-          run: |
+      - name: Set All Environment Variables for Testbed
+        run: |
             echo "openresty_http_port=8080" >> $GITHUB_ENV
             echo "openresty_https_port=8443" >> $GITHUB_ENV
             echo "apache_http_port=8081" >> $GITHUB_ENV
