@@ -59,8 +59,8 @@ jobs:
       # Step 5: Build and Test ZIO-HTTP (Include testing)
       - name: Build and Test ZIO-HTTP
         run: |
-          sbt clean compile
-        #   sbt test
+          # sbt clean compile
+          # sbt test
 
       # Step 6: Run ZIO-HTTP Server in the Background (Use nohup to prevent premature exit)
       - name: Run ZIO-HTTP Server
@@ -109,7 +109,7 @@ jobs:
           echo "nginx_https_port=8445" >> $GITHUB_ENV
           echo "jetty_http_port=8083" >> $GITHUB_ENV
           echo "jetty_https_port=8446" >> $GITHUB_ENV
-          echo "tomcat_http_port=8084" >> $GITHUB_ENV
+          echo "tomcat_http_port=8086" >> $GITHUB_ENV
           echo "tomcat_https_port=8447" >> $GITHUB_ENV
           echo "openlitespeed_http_port=8085" >> $GITHUB_ENV
           echo "openlitespeed_https_port=8448" >> $GITHUB_ENV
