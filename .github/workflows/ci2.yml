@@ -101,6 +101,14 @@ jobs:
           cd http-conformance
           sh fix_dpkt.sh
 
+      - name: Create .env File from Example
+        run: |
+          mv http-conformance/.env.example http-conformance/.env
+          echo "PGPORT=5432" >> http-conformance/.env
+          echo "PGHOST=127.0.0.1" >> http-conformance/.env
+          echo "PGUSER=runner" >> http-conformance/.env
+          echo "PGPASSWORD=runnerpassword" >> http-conformance/.env
+
       - name: Set All Environment Variables for Testbed
         run: |
           echo "openresty_http_port=8080" >> $GITHUB_ENV
@@ -143,11 +151,10 @@ jobs:
           # Restart Jetty after enabling modules
           docker compose restart jetty
 
-
       - name: Test PostgreSQL Connection
         run: |
           PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "\dt"
-          
+
       - name: Run HTTP Conformance Tests
         run: |
           cd http-conformance
