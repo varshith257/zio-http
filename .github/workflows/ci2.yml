@@ -92,11 +92,24 @@ jobs:
           cd http-conformance
           sh fix_dpkt.sh
 
+      - name: Set Environment Variables for Testbed
+        run: |
+          echo "openresty_http_port=8080" >> $GITHUB_ENV
+          echo "openresty_https_port=8443" >> $GITHUB_ENV
+          echo "apache_http_port=8081" >> $GITHUB_ENV
+          echo "apache_https_port=8444" >> $GITHUB_ENV
+          echo "nginx_http_port=8082" >> $GITHUB_ENV
+          echo "nginx_https_port=8445" >> $GITHUB_ENV
+          echo "jetty_http_port=8083" >> $GITHUB_ENV
+          echo "jetty_https_port=8446" >> $GITHUB_ENV
+
       # Step 10: Start Testbed Servers (Docker Compose)
       - name: Start Testbed (Docker Compose)
         run: |
           cd http-conformance/testbed
           docker-compose up -d
+          echo "Docker Compose services started:"
+          docker-compose ps
           docker exec testbed-jetty-1 bash -c "java -jar /usr/local/jetty/start.jar --add-modules=ssl,http2,https,test-keystore"
           docker-compose restart jetty
 
