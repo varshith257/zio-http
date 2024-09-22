@@ -46,7 +46,7 @@ jobs:
           cd /tmp
           sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runnerpassword';"
           sudo -u postgres psql -c "ALTER USER runner CREATEDB;"
-          sudo -u postgres psql -c "CREATE DATABASE testdb OWNER runner;"
+          sudo -u postgres psql -c "CREATE DATABASE runner OWNER runner;"
           sudo -u postgres psql -c "CREATE USER testuser WITH PASSWORD 'testpassword';" # Create runner role
           sudo -u postgres psql -c "ALTER USER testuser CREATEDB;" # Allow runner to create databases
 
@@ -55,7 +55,7 @@ jobs:
         run: |
           echo "POSTGRES_USER=runner" >> $GITHUB_ENV
           echo "POSTGRES_PASSWORD=runnerpassword" >> $GITHUB_ENV
-          echo "POSTGRES_DB=testdb" >> $GITHUB_ENV
+          echo "POSTGRES_DB=runner" >> $GITHUB_ENV
           echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
 
       # Step 5: Build and Test ZIO-HTTP (Include testing)
@@ -146,7 +146,7 @@ jobs:
 
       - name: Test PostgreSQL Connection
         run: |
-          PGPASSWORD=runnerpassword psql -U runner -d testdb -h localhost -c "\dt"
+          PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "\dt"
           
       - name: Run HTTP Conformance Tests
         run: |
