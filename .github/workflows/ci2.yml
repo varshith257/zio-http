@@ -53,8 +53,8 @@ jobs:
       # Step 4: Configure environment for PostgreSQL
       - name: Configure PostgreSQL Environment
         run: |
-          echo "POSTGRES_USER=testuser" >> $GITHUB_ENV
-          echo "POSTGRES_PASSWORD=testpassword" >> $GITHUB_ENV
+          echo "POSTGRES_USER=runner" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=runnerpassword" >> $GITHUB_ENV
           echo "POSTGRES_DB=testdb" >> $GITHUB_ENV
           echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
 
