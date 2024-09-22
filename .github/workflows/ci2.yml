@@ -120,13 +120,15 @@ jobs:
           echo "traefik_http_port=8092" >> $GITHUB_ENV
           echo "traefik_https_port=8451" >> $GITHUB_ENV
 
+      - name: Set Docker Host
+        run: echo "DOCKER_HOST=unix:///var/run/docker.sock" >> $GITHUB_ENV
       # Step 10: Start Testbed Servers (Docker Compose)
       - name: Start Testbed Servers (Docker Compose)
         run: |
           cd http-conformance/testbed
-          docker compose up -d
+          docker-compose up -d
           echo "Docker Compose services started:"
-          docker compose ps
+          docker-compose ps
 
       # Step 11: Run HTTP Conformance Tests
       - name: Set Up Jetty Base and Enable HTTP/2
