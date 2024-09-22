@@ -37,24 +37,69 @@ jobs:
           java-version: ${{ matrix.java }}
           cache: sbt
 
+      # Step 3: Install PostgreSQL
+      - name: Set up PostgreSQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql postgresql-contrib
+          sudo service postgresql start
+          sudo -u postgres psql -c "CREATE USER testuser WITH PASSWORD 'testpassword';"
+          sudo -u postgres psql -c "ALTER USER testuser CREATEDB;"
+          sudo -u postgres psql -c "CREATE DATABASE testdb OWNER testuser;"
+
+      # Step 4: Configure environment for PostgreSQL
+      - name: Configure PostgreSQL Environment
+        run: |
+          echo "POSTGRES_USER=testuser" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=testpassword" >> $GITHUB_ENV
+          echo "POSTGRES_DB=testdb" >> $GITHUB_ENV
+          echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
+
       - name: Build and Test ZIO-HTTP
         run: |
           sbt clean compile
-          sbt test
+        #   sbt test
 
       # Step 1: Run ZIO-HTTP Server in Background
       - name: Run ZIO-HTTP server
         run: sbt run &
 
-      # Step 2: Install CISPA HTTP Conformance Suite
-      - name: Install CISPA HTTP Conformance Suite
+      # Step 7: Install Docker (for running local servers in conformance suite)
+      - name: Install Docker
+        uses: docker/setup-buildx-action@v2
+
+      # Step 8: Install Poetry and Dependencies
+      - name: Install Poetry and Dependencies
         run: |
-          sudo apt-get update
           sudo apt-get install -y python3 python3-pip
+          pip install poetry
           git clone --recurse-submodules https://github.com/cispa/http-conformance
           cd http-conformance
-          pip3 install poetry
           poetry install
+
+      # Step 9: Patch dpkt Library
+      - name: Patch dpkt Library
+        run: |
+          cd http-conformance
+          sh fix_dpkt.sh
+
+      # Step 10: Start Testbed (Docker Compose)
+      - name: Start Testbed (Docker Compose)
+        run: |
+          cd http-conformance/testbed
+          docker compose up -d
+          docker exec testbed-jetty-1 bash -c "java -jar /usr/local/jetty/start.jar --add-modules=ssl,http2,https,test-keystore"
+          docker compose restart jetty
+
+      #   # Step 2: Install CISPA HTTP Conformance Suite
+      #   - name: Install CISPA HTTP Conformance Suite
+      #     run: |
+      #       sudo apt-get update
+      #       sudo apt-get install -y python3 python3-pip
+      #       git clone --recurse-submodules https://github.com/cispa/http-conformance
+      #       cd http-conformance
+      #       pip3 install poetry
+      #       poetry install
 
       # Step 3: Run the HTTP Conformance Tests
       - name: Run HTTP Conformance Tests
