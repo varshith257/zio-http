@@ -44,11 +44,11 @@ jobs:
           sudo apt-get install -y postgresql postgresql-contrib
           sudo service postgresql start
           cd /tmp
-          sudo -u postgres psql -c "CREATE USER testuser WITH PASSWORD 'testpassword';"
-          sudo -u postgres psql -c "ALTER USER testuser CREATEDB;"
-          sudo -u postgres psql -c "CREATE DATABASE testdb OWNER testuser;"
-          sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'testpassword';" # Create runner role
-          sudo -u postgres psql -c "ALTER USER runner CREATEDB;" # Allow runner to create databases
+          sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runnerpassword';"
+          sudo -u postgres psql -c "ALTER USER runner CREATEDB;"
+          sudo -u postgres psql -c "CREATE DATABASE testdb OWNER runner;"
+          sudo -u postgres psql -c "CREATE USER testuser WITH PASSWORD 'testpassword';" # Create runner role
+          sudo -u postgres psql -c "ALTER USER testuser CREATEDB;" # Allow runner to create databases
 
       # Step 4: Configure environment for PostgreSQL
       - name: Configure PostgreSQL Environment
@@ -146,7 +146,7 @@ jobs:
 
       - name: Test PostgreSQL Connection
         run: |
-          psql -U testuser -d testdb -h localhost -c "\dt"
+          PGPASSWORD=runnerpassword psql -U runner -d testdb -h localhost -c "\dt"
           
       - name: Run HTTP Conformance Tests
         run: |
