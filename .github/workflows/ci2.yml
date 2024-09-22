@@ -129,10 +129,15 @@ jobs:
           docker compose ps
 
       # Step 11: Run HTTP Conformance Tests
-      - name: Enable HTTP/2 for Jetty and Restart
+
+      - name: Set Up Jetty Base and Enable HTTP/2
         run: |
-          docker exec testbed-jetty-1 bash -c "java -jar /usr/local/jetty/start.jar --add-modules=ssl,http2,https,test-keystore"
-          docker compose restart jetty
+          # Ensure Jetty has a base directory and necessary configuration
+          docker exec testbed-jetty-1 bash -c "mkdir -p /usr/local/jetty-base && cp -r /usr/local/jetty/etc /usr/local/jetty-base/"
+          # Add necessary Jetty modules
+          docker exec testbed-jetty-1 bash -c "java -jar /usr/local/jetty/start.jar --add-to-start=ssl,http2,https,test-keystore"
+          # Restart Jetty after enabling modules
+          docker-compose restart jetty
 
       - name: Run HTTP Conformance Tests
         run: |
