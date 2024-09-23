@@ -61,7 +61,7 @@ jobs:
       # Step 5: Build and Test ZIO-HTTP (Include testing)
       - name: Build and Test ZIO-HTTP
         run: |
-          # sbt clean compile
+          sbt clean compile
           # sbt test
 
       - name: Run ZIO HTTP server
