@@ -159,6 +159,15 @@ jobs:
         run: |
           PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "\dt"
 
+      - name: Run HTTP Conformance Tests and Setup Schema
+        run: |
+          cd http-conformance
+          poetry run python run_checks.py --mode=local --max_workers=10
+
+      - name: Test PostgreSQL Connection
+        run: |
+          PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "\dt"
+          
       # Insert ZIO-HTTP into Site Table
       - name: Insert ZIO-HTTP into Site Table
         run: |
