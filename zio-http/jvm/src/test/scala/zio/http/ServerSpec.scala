@@ -541,7 +541,7 @@ object ServerSpec extends RoutesRunnableSpec {
 
         // Crafting a request with invalid headers containing CR, LF, and NULL
         val requestWithCRLFHeader = Request.get("/test").addHeader("InvalidHeader", "Value\r\n")
-        val requestWithNullHeader = Request.get("/test").addHeader("InvalidHeader", "Value\0")
+        val requestWithNullHeader = Request.get("/test").addHeader("InvalidHeader", "Value\u0000")
 
         for {
           responseCRLF <- app.runZIO(requestWithCRLFHeader)
