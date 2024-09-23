@@ -45,6 +45,16 @@ jobs:
           sudo service postgresql start
           sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
 
+      - name: Create .env File for Testbed
+        run: |
+          mv http-conformance/.env.example http-conformance/.env
+          echo "PGPORT=5432" >> http-conformance/.env
+          echo "PGHOST=127.0.0.1" >> http-conformance/.env
+          echo "PGUSER=postgres" >> http-conformance/.env
+          echo "PGPASSWORD=postgres" >> http-conformance/.env
+          echo "PGDATABASE=postgres" >> http-conformance/.env
+          echo "zio_http_http_port=8080" >> http-conformance/.env
+
       # # Step 4: Configure environment for PostgreSQL
       # - name: Configure PostgreSQL Environment
       #   run: |
@@ -115,15 +125,6 @@ jobs:
         run: |
           cd http-conformance
           sh fix_dpkt.sh
-
-      - name: Create .env File for Testbed
-        run: |
-          mv http-conformance/.env.example http-conformance/.env
-          echo "PGPORT=5432" >> http-conformance/.env
-          echo "PGHOST=127.0.0.1" >> http-conformance/.env
-          echo "PGUSER=postgres" >> http-conformance/.env
-          echo "PGPASSWORD=postgres" >> http-conformance/.env
-          echo "PGDATABASE=postgres" >> http-conformance/.env
 
       - name: Set All Environment Variables for Testbed
         run: |
