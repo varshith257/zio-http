@@ -48,4 +48,5 @@ jobs:
 
       - name: Make curl Request to ZIO HTTP Server
         run: |
-          curl -v http://localhost:8080/hello        # Check root route
+          curl -v http://localhost:8080        # Check root route
+          curl -v http://localhost:8080/json        # Check root route
