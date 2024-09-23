@@ -562,6 +562,19 @@ object ServerSpec extends RoutesRunnableSpec {
         for {
           response <- app.runZIO(malformedRequest)
         } yield assertTrue(response.status == Status.BadRequest)
+      } +
+      test("should return 400 Bad Request if there is whitespace between header field and colon") {
+        val route = Method.GET / "test" -> Handler.ok
+        val app   = Routes(route)
+
+        // Crafting a request with a whitespace between the header field name and the colon
+        val requestWithWhitespaceHeader = Request.get("/test").addHeader("Invalid Header : value")
+
+        for {
+          response <- app.runZIO(requestWithWhitespaceHeader)
+        } yield {
+          assertTrue(response.status == Status.BadRequest) // Expecting a 400 Bad Request
+        }
       }
   }
 
