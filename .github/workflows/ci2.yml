@@ -64,34 +64,21 @@ jobs:
           # sbt clean compile
           # sbt test
 
-      # Step 6: Run ZIO-HTTP Server in the Background (Use nohup to prevent premature exit)
-      - name: Run ZIO-HTTP Server
+      - name: Run ZIO HTTP server
         run: |
-          nohup sbt 'runMain zio.ZIOAppDefault "{
-            import zio._
-            import zio.http._
+          sbt "project zioHttpExample" "runMain example.HelloWorld" & 
+          sleep 10    # Give the server time to start
 
-            object HelloWorld extends ZIOAppDefault {
-              val homeRoute = Method.GET / Root -> handler(Response.text(\"Hello World!\"))
-              val jsonRoute = Method.GET / \"json\" -> handler(Response.json(\"{\"greetings\": \"Hello World!\"}\"))
-
-              val app = Routes(homeRoute, jsonRoute)
-
-              override val run = Server.serve(app).provide(Server.defaultWithPort(8080))
-            }
-
-            HelloWorld.run.exitCode
-          }' &
-
-      # Step 7: Wait for ZIO-HTTP server to start
-      - name: Wait for server startup
-        run: sleep 10 # Wait 10 seconds for the server to fully start
+      # - name: Make curl Request to ZIO HTTP Server
+      #   run: |
+      #     curl -v http://localhost:8080        # Check the "Hello World!" route
+      #     curl -v http://localhost:8080/json   # Check the JSON route
 
       # Step 8: Check if ZIO-HTTP server is responding
       - name: Check ZIO-HTTP server
         run: |
           for i in {1..30}; do
-            curl http://localhost:8080/hello && break
+            curl http://localhost:8080 && break
             sleep 5
           done
 
@@ -159,6 +146,7 @@ jobs:
 
       - name: Set Docker Host
         run: echo "DOCKER_HOST=unix:///var/run/docker.sock" >> $GITHUB_ENV
+
       # Step 10: Start Testbed Servers (Docker Compose)
       - name: Start Testbed Servers (Docker Compose)
         run: |
@@ -171,11 +159,8 @@ jobs:
       - name: Set Up Jetty Base and Enable HTTP/2
         run: |
           cd http-conformance/testbed
-          # Ensure Jetty has a base directory and necessary configuration with root permissions
           docker exec --user root testbed-jetty-1 bash -c "mkdir -p /usr/local/jetty-base && cp -r /usr/local/jetty/etc /usr/local/jetty-base/"
-          # Add necessary Jetty modules with root permissions
           docker exec --user root testbed-jetty-1 bash -c "java -jar /usr/local/jetty/start.jar --add-to-start=ssl,http2,https,test-keystore"
-          # Restart Jetty after enabling modules
           docker compose restart jetty
 
       - name: Test PostgreSQL Connection and add ZIO-HTTP to Site Table
@@ -184,8 +169,8 @@ jobs:
           - name: Add ZIO-HTTP to Site Table
           run: |
             PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "
-            # INSERT INTO Site (origin, site, reachable, site_type, org_scheme)
-            # VALUES ('http://localhost:8083', 'ZIO-HTTP Server', TRUE, 'local', 'http');"
+            INSERT INTO Site (origin, site, reachable, site_type, org_scheme)
+            VALUES ('http://localhost:8080', 'ZIO-HTTP Server', TRUE, 'local', 'http');"
 
       - name: Run HTTP Conformance Tests
         run: |
