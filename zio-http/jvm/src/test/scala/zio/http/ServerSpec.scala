@@ -23,7 +23,7 @@ import zio._
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
-import zio.http._
+
 import zio.stream.{ZPipeline, ZStream}
 
 import zio.http.internal.{DynamicServer, HttpGen, RoutesRunnableSpec}
