@@ -44,11 +44,8 @@ jobs:
           sudo apt-get install -y postgresql postgresql-contrib
           sudo service postgresql start
           cd /tmp
-          sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runnerpassword';"
-          sudo -u postgres psql -c "ALTER USER runner CREATEDB;"
-          sudo -u postgres psql -c "CREATE DATABASE runner OWNER runner;"
-          sudo -u postgres psql -c "CREATE USER testuser WITH PASSWORD 'testpassword';" # Create runner role
-          sudo -u postgres psql -c "ALTER USER testuser CREATEDB;"
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+          sudo -u postgres psql -c "CREATE DATABASE postgres OWNER postgres;"
 
       # # Step 4: Configure environment for PostgreSQL
       # - name: Configure PostgreSQL Environment
@@ -73,6 +70,21 @@ jobs:
         run: |
           curl -v http://localhost:8080        # Check the "Hello World!" route
           curl -v http://localhost:8080/json   # Check the JSON route
+
+      # - name: Insert ZIO-HTTP into Site Table
+      #   run: |
+      #     PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "
+      #     CREATE TABLE IF NOT EXISTS Site (
+      #       origin TEXT UNIQUE,
+      #       site TEXT,
+      #       reachable BOOLEAN DEFAULT TRUE,
+      #       site_type TEXT,
+      #       org_scheme TEXT
+      #     );"
+      #     PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "
+      #     INSERT INTO Site (origin, site, reachable, site_type, org_scheme)
+      #     VALUES ('http://localhost:8080', 'ZIO-HTTP Server', TRUE, 'local', 'http')
+      #     ON CONFLICT (origin) DO NOTHING;"
 
       # Step 7: Install Docker and Docker Compose (needed for local servers)
       - name: Install Docker
@@ -108,11 +120,12 @@ jobs:
 
       - name: Create .env File for Testbed
         run: |
-          mv http-conformance/.env.example http-conformance/testbed/.env
-          echo "PGPORT=5432" >> http-conformance/testbed/.env
-          echo "PGHOST=127.0.0.1" >> http-conformance/testbed/.env
-          echo "PGUSER=runner" >> http-conformance/testbed/.env
-          echo "PGPASSWORD=runnerpassword" >> http-conformance/testbed/.env
+          mv http-conformance/.env.example http-conformance/.env
+          echo "PGPORT=5432" >> http-conformance/.env
+          echo "PGHOST=127.0.0.1" >> http-conformance/.env
+          echo "PGUSER=postgres" >> http-conformance/.env
+          echo "PGPASSWORD=postgres" >> http-conformance/.env
+          echo "PGDATABASE=postgres" >> http-conformance/.env
 
       - name: Set All Environment Variables for Testbed
         run: |
@@ -156,25 +169,18 @@ jobs:
 
       - name: Test PostgreSQL Connection
         run: |
-          PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "\dt"
+          PGPASSWORD=postgres psql -U postgres -d postgres -h localhost -c "\dt"
 
       - name: Run HTTP Conformance Tests and Setup Schema
         run: |
           cd http-conformance
-          poetry run python run_checks.py --mode=local --max_workers=10
+          poetry run python run_checks.py --mode=local --max_workers=2
 
       - name: Test PostgreSQL Connection
         run: |
-          PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "\dt"
-
-      # Insert ZIO-HTTP into Site Table
-      - name: Insert ZIO-HTTP into Site Table
-        run: |
-          PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "
-          INSERT INTO Site (origin, site, reachable, site_type, org_scheme)
-          VALUES ('http://localhost:8080', 'ZIO-HTTP Server', TRUE, 'local', 'http');"
+          PGPASSWORD=postgres psql -U postgres -d postgres -h localhost -c "\dt"
 
       - name: Run HTTP Conformance Tests
         run: |
           cd http-conformance
-          poetry run python run_checks.py --mode=local --max_workers=10
+          poetry run python run_checks.py --mode=local --max_workers=2
