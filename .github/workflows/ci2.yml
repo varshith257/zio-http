@@ -19,7 +19,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         scala: [2.12.19, 2.13.14, 3.3.3]
-        java: [17, 21] # Fixed version notation
+        java: [17, 21]
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
@@ -46,14 +46,8 @@ jobs:
           sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
           sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runnerpassword';"
           sudo -u postgres psql -c "ALTER USER runner CREATEDB;"
-
-      # # Step 4: Configure environment for PostgreSQL
-      # - name: Configure PostgreSQL Environment
-      #   run: |
-      #     echo "POSTGRES_USER=runner" >> $GITHUB_ENV
-      #     echo "POSTGRES_PASSWORD=runnerpassword" >> $GITHUB_ENV
-      #     echo "POSTGRES_DB=runner" >> $GITHUB_ENV
-      #     echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
+          sudo -u postgres psql -c "CREATE DATABASE runner OWNER runner;"
+          sudo -u postgres psql -c "\l"
 
       # Step 5: Build and Test ZIO-HTTP (Include testing)
       - name: Build and Test ZIO-HTTP
@@ -65,21 +59,6 @@ jobs:
         run: |
           sbt "project zioHttpExample" "runMain example.HelloWorld" & 
           sleep 10    # Give the server time to start
-
-      # - name: Insert ZIO-HTTP into Site Table
-      #   run: |
-      #     PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "
-      #     CREATE TABLE IF NOT EXISTS Site (
-      #       origin TEXT UNIQUE,
-      #       site TEXT,
-      #       reachable BOOLEAN DEFAULT TRUE,
-      #       site_type TEXT,
-      #       org_scheme TEXT
-      #     );"
-      #     PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "
-      #     INSERT INTO Site (origin, site, reachable, site_type, org_scheme)
-      #     VALUES ('http://localhost:8080', 'ZIO-HTTP Server', TRUE, 'local', 'http')
-      #     ON CONFLICT (origin) DO NOTHING;"
 
       # Step 7: Install Docker and Docker Compose (needed for local servers)
       - name: Install Docker
