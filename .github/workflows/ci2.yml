@@ -44,6 +44,8 @@ jobs:
           sudo apt-get install -y postgresql postgresql-contrib
           sudo service postgresql start
           sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+          sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runnerpassword';"
+          sudo -u postgres psql -c "ALTER USER runner CREATEDB;"
 
       # # Step 4: Configure environment for PostgreSQL
       # - name: Configure PostgreSQL Environment
@@ -121,9 +123,8 @@ jobs:
           mv http-conformance/.env.example http-conformance/testbed/.env
           echo "PGPORT=5432" >> http-conformance/testbed/.env
           echo "PGHOST=127.0.0.1" >> http-conformance/testbed/.env
-          echo "PGUSER=postgres" >> http-conformance/testbed/.env
-          echo "PGPASSWORD=postgres" >> http-conformance/testbed/.env
-          echo "PGDATABASE=postgres" >> http-conformance/testbed/.env
+          echo "PGUSER=runner" >> http-conformance/testbed/.env
+          echo "PGPASSWORD=runnerpassword" >> http-conformance/testbed/.env
           echo "zio_http_http_port=8080" >> http-conformance/testbed/.env
 
       - name: Set All Environment Variables for Testbed
