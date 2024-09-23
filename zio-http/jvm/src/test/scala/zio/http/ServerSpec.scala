@@ -576,6 +576,24 @@ object ServerSpec extends RoutesRunnableSpec {
         } yield {
           assertTrue(response.status == Status.BadRequest) // Expecting a 400 Bad Request
         }
+      } +
+      test("should not include Content-Length header for 1xx responses") {
+        val route = Method.GET / "info" -> Handler.fromResponse(Response(status = Status.Continue))
+        val app   = Routes(route)
+
+        val request = Request.get("/info")
+        for {
+          response <- app.runZIO(request)
+        } yield assertTrue(!response.headers.contains(Header.ContentLength))
+      } +
+      test("should not include Content-Length header for 204 No Content responses") {
+        val route = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
+        val app   = Routes(route)
+
+        val request = Request.get("/no-content")
+        for {
+          response <- app.runZIO(request)
+        } yield assertTrue(!response.headers.contains(Header.ContentLength))
       }
   }
 
