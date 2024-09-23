@@ -32,7 +32,11 @@ sealed trait HttpContentCodec[A] { self =>
     lookup(contentType) match {
       case Some((_, codec)) =>
         request.body.asChunk.flatMap { bytes =>
-          ZIO.fromEither(codec.codec(config).decode(bytes))
+          if (bytes.isEmpty) {
+            ZIO.fail(HttpCodecError.EmptyBody)
+          } else {
+            ZIO.fromEither(codec.codec(config).decode(bytes))
+          }
         }
       case None             =>
         ZIO.fail(throw new IllegalArgumentException(s"No codec found for content type $contentType"))

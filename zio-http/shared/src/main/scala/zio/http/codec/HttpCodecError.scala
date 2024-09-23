@@ -63,6 +63,12 @@ object HttpCodecError {
   final case class InvalidEntity(details: String, cause: Chunk[ValidationError] = Chunk.empty) extends HttpCodecError {
     def message = s"A well-formed entity failed validation: $details"
   }
+  case object MissingBody                                                                      extends HttpCodecError {
+    def message = "Request body is missing"
+  }
+  case object EmptyBody                                                                        extends HttpCodecError {
+    def message: String = "Empty request body"
+  }
   object InvalidEntity {
     def wrap(errors: Chunk[ValidationError]): InvalidEntity =
       InvalidEntity(
@@ -94,4 +100,14 @@ object HttpCodecError {
     !cause.isFailure && cause.defects.forall(e =>
       e.isInstanceOf[HttpCodecError.MissingHeader] || e.isInstanceOf[HttpCodecError.MissingQueryParam],
     )
+
+  def isMissingBodyOrEmpty(cause: Cause[Any]): Boolean = {
+    !cause.isFailure && cause.defects.exists {
+      case HttpCodecError.MalformedBody(details, _) if details.contains("end of input") => true
+      case HttpCodecError.MissingBody                                                   => true
+      case HttpCodecError.EmptyBody                                                     => true
+      case _                                                                            => false
+    }
+  }
+
 }

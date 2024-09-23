@@ -67,7 +67,7 @@ private[zio] final case class NettyDriver(
       while (loop) {
         val oldAppAndRt     = appRef.get()
         val (oldApp, oldRt) = oldAppAndRt
-        val updatedApp      = (oldApp ++ newApp).asInstanceOf[Routes[Any, Response]]
+        val updatedApp      = (newApp ++ oldApp).asInstanceOf[Routes[Any, Response]]
         val updatedEnv      = oldRt.environment.unionAll(env)
         // Update the fiberRefs with the new environment to avoid doing this every time we run / fork a fiber
         val updatedFibRefs  = oldRt.fiberRefs.updatedAs(fiberId)(FiberRef.currentEnvironment, updatedEnv)
