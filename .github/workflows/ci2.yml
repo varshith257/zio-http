@@ -74,14 +74,6 @@ jobs:
           curl -v http://localhost:8080        # Check the "Hello World!" route
           curl -v http://localhost:8080/json   # Check the JSON route
 
-      # # Step 8: Check if ZIO-HTTP server is responding
-      # - name: Check ZIO-HTTP server
-      #   run: |
-      #     for i in {1..30}; do
-      #       curl http://localhost:8080 && break
-      #       sleep 5
-      #     done
-
       # Step 7: Install Docker and Docker Compose (needed for local servers)
       - name: Install Docker
         run: |
