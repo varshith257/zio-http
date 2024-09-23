@@ -43,6 +43,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql postgresql-contrib
           sudo service postgresql start
+          cd /tmp
           sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
           sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runnerpassword';"
           sudo -u postgres psql -c "ALTER USER runner CREATEDB;"
@@ -153,13 +154,18 @@ jobs:
       - name: Run HTTP Conformance Tests and Setup Schema
         run: |
           cd http-conformance
-          poetry run python run_checks.py --mode=local --max_workers=2
+          poetry run python run_checks.py --mode=local --max_workers=20
 
-      - name: Test PostgreSQL Connection
-        run: |
-          PGPASSWORD=postgres psql -U postgres -d postgres -h localhost -c "\dt"
-
-      - name: Run HTTP Conformance Tests
+      # Step 12: Start JupyterLab for Result Analysis
+      - name: Install JupyterLab and Start Analysis
         run: |
           cd http-conformance
-          poetry run python run_checks.py --mode=local --max_workers=2
+          poetry run pip install jupyterlab
+
+          # Run JupyterLab
+          poetry run jupyter lab --no-browser --port=8888 &
+          sleep 10
+
+          # Analyze the results using provided Jupyter Notebooks
+          poetry run jupyter nbconvert --execute --inplace --to notebook --allow-errors helpers/analysis_stats.ipynb
+          poetry run jupyter nbconvert --execute --inplace --to notebook --allow-errors helpers/analysis_paper.ipynb
