@@ -43,8 +43,8 @@ jobs:
       # Step 4: Run the ZIO HTTP server from conformance/Server.scala
       - name: Run ZIO HTTP server
         run: |
-          sbt "runMain conformance.Server" &  # Start the server defined in conformance/Server.scala
-          sleep 10  # Wait for the server to start
+          sbt "project zioHttpExample" "runMain example.HelloWorld" & 
+          sleep 10
 
       - name: Make curl Request to ZIO HTTP Server
         run: |
