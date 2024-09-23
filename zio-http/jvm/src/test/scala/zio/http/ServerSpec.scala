@@ -26,10 +26,10 @@ import zio.test._
 
 import zio.stream.{ZPipeline, ZStream}
 
+import zio.http._
 import zio.http.internal.{DynamicServer, HttpGen, RoutesRunnableSpec}
 import zio.http.netty.NettyConfig
 import zio.http.template.{body, div, id}
-import zio.http._
 
 object ServerSpec extends RoutesRunnableSpec {
 
@@ -534,6 +534,22 @@ object ServerSpec extends RoutesRunnableSpec {
         for {
           response <- app.runZIO(requestWithHost)
         } yield assertTrue(response.status == Status.Ok) // Expecting 200 when Host is present
+      } +
+      test("should return 400 Bad Request if header contains CR, LF, or NULL") {
+        val route = Method.GET / "test" -> Handler.ok
+        val app   = Routes(route)
+
+        // Crafting a request with invalid headers containing CR, LF, and NULL
+        val requestWithCRLFHeader = Request.get("/test").addHeader("InvalidHeader", "Value\r\n")
+        val requestWithNullHeader = Request.get("/test").addHeader("InvalidHeader", "Value\0")
+
+        for {
+          responseCRLF <- app.runZIO(requestWithCRLFHeader)
+          responseNull <- app.runZIO(requestWithNullHeader)
+        } yield {
+          assertTrue(responseCRLF.status == Status.BadRequest) &&
+          assertTrue(responseNull.status == Status.BadRequest)
+        }
       }
   }
 
