@@ -48,7 +48,7 @@ jobs:
           sudo -u postgres psql -c "ALTER USER runner CREATEDB;"
           sudo -u postgres psql -c "CREATE DATABASE runner OWNER runner;"
           sudo -u postgres psql -c "CREATE USER testuser WITH PASSWORD 'testpassword';" # Create runner role
-          sudo -u postgres psql -c "ALTER USER testuser CREATEDB;" # Allow runner to create databases
+          sudo -u postgres psql -c "ALTER USER testuser CREATEDB;"
 
       # Step 4: Configure environment for PostgreSQL
       - name: Configure PostgreSQL Environment
@@ -155,14 +155,16 @@ jobs:
           docker exec --user root testbed-jetty-1 bash -c "java -jar /usr/local/jetty/start.jar --add-to-start=ssl,http2,https,test-keystore"
           docker compose restart jetty
 
-      - name: Test PostgreSQL Connection and add ZIO-HTTP to Site Table
+      - name: Test PostgreSQL Connection
         run: |
           PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "\dt"
-          - name: Add ZIO-HTTP to Site Table
-          run: |
-            PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "
-            INSERT INTO Site (origin, site, reachable, site_type, org_scheme)
-            VALUES ('http://localhost:8080', 'ZIO-HTTP Server', TRUE, 'local', 'http');"
+
+      # Insert ZIO-HTTP into Site Table
+      - name: Insert ZIO-HTTP into Site Table
+        run: |
+          PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "
+          INSERT INTO Site (origin, site, reachable, site_type, org_scheme)
+          VALUES ('http://localhost:8080', 'ZIO-HTTP Server', TRUE, 'local', 'http');"
 
       - name: Run HTTP Conformance Tests
         run: |
