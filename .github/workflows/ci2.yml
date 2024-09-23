@@ -45,16 +45,6 @@ jobs:
           sudo service postgresql start
           sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
 
-      - name: Create .env File for Testbed
-        run: |
-          mv http-conformance/.env.example http-conformance/.env
-          echo "PGPORT=5432" >> http-conformance/.env
-          echo "PGHOST=127.0.0.1" >> http-conformance/.env
-          echo "PGUSER=postgres" >> http-conformance/.env
-          echo "PGPASSWORD=postgres" >> http-conformance/.env
-          echo "PGDATABASE=postgres" >> http-conformance/.env
-          echo "zio_http_http_port=8080" >> http-conformance/.env
-
       # # Step 4: Configure environment for PostgreSQL
       # - name: Configure PostgreSQL Environment
       #   run: |
@@ -73,11 +63,6 @@ jobs:
         run: |
           sbt "project zioHttpExample" "runMain example.HelloWorld" & 
           sleep 10    # Give the server time to start
-
-      - name: Make curl Request to ZIO HTTP Server
-        run: |
-          curl -v http://localhost:8080        # Check the "Hello World!" route
-          curl -v http://localhost:8080/json   # Check the JSON route
 
       # - name: Insert ZIO-HTTP into Site Table
       #   run: |
@@ -125,6 +110,21 @@ jobs:
         run: |
           cd http-conformance
           sh fix_dpkt.sh
+
+      - name: Make curl Request to ZIO HTTP Server
+        run: |
+          curl -v http://localhost:8080        # Check the "Hello World!" route
+          curl -v http://localhost:8080/json   # Check the JSON route
+
+      - name: Create .env File for Testbed
+        run: |
+          mv http-conformance/.env.example http-conformance/testbed/.env
+          echo "PGPORT=5432" >> http-conformance/testbed/.env
+          echo "PGHOST=127.0.0.1" >> http-conformance/testbed/.env
+          echo "PGUSER=postgres" >> http-conformance/testbed/.env
+          echo "PGPASSWORD=postgres" >> http-conformance/testbed/.env
+          echo "PGDATABASE=postgres" >> http-conformance/testbed/.env
+          echo "zio_http_http_port=8080" >> http-conformance/testbed/.env
 
       - name: Set All Environment Variables for Testbed
         run: |
