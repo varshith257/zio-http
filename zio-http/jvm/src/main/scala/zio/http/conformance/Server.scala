@@ -1,4 +1,4 @@
-package conformance
+package zio.http.conformance
 
 import zio._
 import zio.http._
