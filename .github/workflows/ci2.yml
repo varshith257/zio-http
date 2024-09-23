@@ -50,13 +50,13 @@ jobs:
           sudo -u postgres psql -c "CREATE USER testuser WITH PASSWORD 'testpassword';" # Create runner role
           sudo -u postgres psql -c "ALTER USER testuser CREATEDB;"
 
-      # Step 4: Configure environment for PostgreSQL
-      - name: Configure PostgreSQL Environment
-        run: |
-          echo "POSTGRES_USER=runner" >> $GITHUB_ENV
-          echo "POSTGRES_PASSWORD=runnerpassword" >> $GITHUB_ENV
-          echo "POSTGRES_DB=runner" >> $GITHUB_ENV
-          echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
+      # # Step 4: Configure environment for PostgreSQL
+      # - name: Configure PostgreSQL Environment
+      #   run: |
+      #     echo "POSTGRES_USER=runner" >> $GITHUB_ENV
+      #     echo "POSTGRES_PASSWORD=runnerpassword" >> $GITHUB_ENV
+      #     echo "POSTGRES_DB=runner" >> $GITHUB_ENV
+      #     echo "POSTGRES_HOST=localhost" >> $GITHUB_ENV
 
       # Step 5: Build and Test ZIO-HTTP (Include testing)
       - name: Build and Test ZIO-HTTP
@@ -113,7 +113,6 @@ jobs:
           echo "PGHOST=127.0.0.1" >> http-conformance/testbed/.env
           echo "PGUSER=runner" >> http-conformance/testbed/.env
           echo "PGPASSWORD=runnerpassword" >> http-conformance/testbed/.env
-          echo "MATTERMOST_HOOK=http://dummy" >> http-conformance/testbed/.env
 
       - name: Set All Environment Variables for Testbed
         run: |
@@ -167,7 +166,7 @@ jobs:
       - name: Test PostgreSQL Connection
         run: |
           PGPASSWORD=runnerpassword psql -U runner -d runner -h localhost -c "\dt"
-          
+
       # Insert ZIO-HTTP into Site Table
       - name: Insert ZIO-HTTP into Site Table
         run: |
