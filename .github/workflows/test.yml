@@ -1,0 +1,51 @@
+name: Run ZIO HTTP Code in CI and Make curl Request
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: ["**"]
+    tags: [v*]
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  JDK_JAVA_OPTIONS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
+  SBT_OPTS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
+
+jobs:
+  build:
+    name: Build, Test, and Conformance
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.12.19, 2.13.14, 3.3.3]
+        java: [17, 21] # Fixed version notation
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: sbt
+
+      - name: Compile the code
+        run: sbt clean compile
+
+      # Step 4: Run the ZIO HTTP server from conformance/Server.scala
+      - name: Run ZIO HTTP server
+        run: |
+          sbt "runMain conformance.Server" &  # Start the server defined in conformance/Server.scala
+          sleep 10  # Wait for the server to start
+
+      - name: Make curl Request to ZIO HTTP Server
+        run: |
+          curl -v http://localhost:8080/hello        # Check root route
