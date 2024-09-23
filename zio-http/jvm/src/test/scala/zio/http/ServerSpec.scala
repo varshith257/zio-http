@@ -568,7 +568,8 @@ object ServerSpec extends RoutesRunnableSpec {
         val app   = Routes(route)
 
         // Crafting a request with a whitespace between the header field name and the colon
-        val requestWithWhitespaceHeader = Request.get("/test").addHeader("Invalid Header : value")
+        // val requestWithWhitespaceHeader = Request.get("/test").addHeader("Invalid Header : value")
+        val requestWithWhitespaceHeader = Request.get("/test").addHeader(Header.Custom("Invalid Header ", "value"))
 
         for {
           response <- app.runZIO(requestWithWhitespaceHeader)
