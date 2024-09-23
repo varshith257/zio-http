@@ -584,7 +584,7 @@ object ServerSpec extends RoutesRunnableSpec {
         val request = Request.get("/info")
         for {
           response <- app.runZIO(request)
-        } yield assertTrue(!response.headers.contains(Header.ContentLength))
+        } yield assertTrue(!response.headers.contains(Header.ContentLength.name))
       } +
       test("should not include Content-Length header for 204 No Content responses") {
         val route = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
@@ -593,7 +593,7 @@ object ServerSpec extends RoutesRunnableSpec {
         val request = Request.get("/no-content")
         for {
           response <- app.runZIO(request)
-        } yield assertTrue(!response.headers.contains(Header.ContentLength))
+        } yield assertTrue(!response.headers.contains(Header.ContentLength.name))
       }
   }
 
