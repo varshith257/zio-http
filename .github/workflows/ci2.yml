@@ -169,3 +169,9 @@ jobs:
           # Analyze the results using provided Jupyter Notebooks
           poetry run jupyter nbconvert --execute --inplace --to notebook --allow-errors helpers/analysis_stats.ipynb
           poetry run jupyter nbconvert --execute --inplace --to notebook --allow-errors helpers/analysis_paper.ipynb
+
+      - name: Upload Analysis Notebooks
+        uses: actions/upload-artifact@v3
+        with:
+          name: analysis-reports
+          path: http-conformance/helpers/*.ipynb
