@@ -43,9 +43,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql postgresql-contrib
           sudo service postgresql start
-          cd /tmp
           sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
-          sudo -u postgres psql -c "CREATE DATABASE postgres OWNER postgres;"
 
       # # Step 4: Configure environment for PostgreSQL
       # - name: Configure PostgreSQL Environment
