@@ -530,7 +530,7 @@ object ServerSpec extends RoutesRunnableSpec {
       test("should return 200 OK if Host header is present") {
         val route           = Method.GET / "test" -> Handler.ok
         val app             = Routes(route)
-        val requestWithHost = Request.get("/test").addHeader(Header.host("localhost"))
+        val requestWithHost = Request.get("/test").addHeader(Header.Host("localhost"))
         for {
           response <- app.runZIO(requestWithHost)
         } yield assertTrue(response.status == Status.Ok) // Expecting 200 when Host is present
