@@ -23,12 +23,13 @@ import zio._
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
-
+import zio.http._
 import zio.stream.{ZPipeline, ZStream}
 
 import zio.http.internal.{DynamicServer, HttpGen, RoutesRunnableSpec}
 import zio.http.netty.NettyConfig
 import zio.http.template.{body, div, id}
+import zio.http._
 
 object ServerSpec extends RoutesRunnableSpec {
 
@@ -516,6 +517,24 @@ object ServerSpec extends RoutesRunnableSpec {
       test("header is set") {
         val res = routes.deploy.headers.run().map(_.header(Header.ContentLength))
         assertZIO(res)(isSome(anything))
+      } +
+      test("should return 400 Bad Request if Host header is missing") {
+        val app = Http.collect[Request] { case Method.GET -> !! / "test" =>
+          Response.text("Test OK")
+        }
+
+        for {
+          response <- app.runZIO(Request(Method.GET, URL(!! / "test")))
+        } yield assertTrue(response.status == Status.BadRequest) // Expecting 400 for missing Host
+      } +
+      test("should return 200 OK if Host header is present") {
+        val app = Http.collect[Request] { case Method.GET -> !! / "test" =>
+          Response.text("Test OK")
+        }
+
+        for {
+          response <- app.runZIO(Request(Method.GET, URL(!! / "test")).addHeader(Header.host("localhost")))
+        } yield assertTrue(response.status == Status.Ok) // Expecting 200 when Host is present
       }
   }
 
