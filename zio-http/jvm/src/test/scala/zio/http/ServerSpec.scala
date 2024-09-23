@@ -519,21 +519,20 @@ object ServerSpec extends RoutesRunnableSpec {
         assertZIO(res)(isSome(anything))
       } +
       test("should return 400 Bad Request if Host header is missing") {
-        val app = Http.collect[Request] { case Method.GET -> !! / "test" =>
-          Response.text("Test OK")
-        }
+        val route              = Method.GET / "test" -> Handler.ok
+        val app                = Routes(route)
+        val requestWithoutHost = Request.get("/test")
 
         for {
-          response <- app.runZIO(Request(Method.GET, URL(!! / "test")))
-        } yield assertTrue(response.status == Status.BadRequest) // Expecting 400 for missing Host
+          response <- app.runZIO(requestWithoutHost)
+        } yield assertTrue(response.status == Status.BadRequest)
       } +
       test("should return 200 OK if Host header is present") {
-        val app = Http.collect[Request] { case Method.GET -> !! / "test" =>
-          Response.text("Test OK")
-        }
-
+        val route           = Method.GET / "test" -> Handler.ok
+        val app             = Routes(route)
+        val requestWithHost = Request.get("/test").addHeader(Header.host("localhost"))
         for {
-          response <- app.runZIO(Request(Method.GET, URL(!! / "test")).addHeader(Header.host("localhost")))
+          response <- app.runZIO(requestWithHost)
         } yield assertTrue(response.status == Status.Ok) // Expecting 200 when Host is present
       }
   }
