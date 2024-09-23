@@ -550,6 +550,18 @@ object ServerSpec extends RoutesRunnableSpec {
           assertTrue(responseCRLF.status == Status.BadRequest) &&
           assertTrue(responseNull.status == Status.BadRequest)
         }
+      } +
+      test("should return 400 Bad Request if there is whitespace between start-line and first header field") {
+        val route = Method.GET / "test" -> Handler.ok
+        val app   = Routes(route)
+
+        // Create a malformed request with extra whitespace between start-line and first header field
+        val malformedRequest =
+          Request.get("/test").copy(headers = Headers.empty).withBody(Body.fromString("\r\nHost: localhost"))
+
+        for {
+          response <- app.runZIO(malformedRequest)
+        } yield assertTrue(response.status == Status.BadRequest)
       }
   }
 
