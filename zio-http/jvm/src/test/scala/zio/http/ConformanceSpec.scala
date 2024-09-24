@@ -6,6 +6,7 @@ import zio.test.TestAspect._
 import zio.test._
 
 import zio.http._
+import zio.http.Header._
 
 object ConformanceSpec extends ZIOHttpSpec {
 
@@ -239,7 +240,7 @@ object ConformanceSpec extends ZIOHttpSpec {
 
           val request = decodedUrl match {
             case Right(url) => Request(method = Method.CONNECT, url = url)
-            case Left(_)    => throw new RuntimeException("Failed to decode the URL") // Handle URL decoding failure
+            case Left(_)    => throw new RuntimeException("Failed to decode the URL")
           }
 
           for {
