@@ -627,7 +627,7 @@ object ServerSpec extends RoutesRunnableSpec {
       } +
       test("should not switch to a protocol not indicated by the client in the Upgrade header") {
         val app = Routes(
-          Method.GET / "switch" -> Handler.fromZIO { (request: Request) =>
+          Method.GET / "switch" -> Handler.fromFunctionZIO { (request: Request) =>
             val clientUpgrade = request.headers.get(Header.Upgrade.name)
 
             ZIO.succeed {
@@ -665,6 +665,31 @@ object ServerSpec extends RoutesRunnableSpec {
           responseWithUpgrade.headers.contains(Header.Upgrade.name),
           responseWithUnsupportedUpgrade.status == Status.BadRequest,
           responseWithoutUpgrade.status == Status.Ok,
+        )
+      } +
+      test("should not return 101 Switching Protocols for HTTP/2 requests") {
+        val app = Routes(
+          Method.GET / "test" -> Handler.fromZIO {
+            ZIO.succeed(
+              Response.status(Status.SwitchingProtocols),
+            )
+          },
+        )
+
+        val http2Request = Request
+          .get("/test")
+          .copy(version = Version.Http_2)
+
+        val http11Request = Request
+          .get("/test")
+          .copy(version = Version.Http_1_1)
+
+        for {
+          http2Response  <- app.runZIO(http2Request)
+          http11Response <- app.runZIO(http11Request)
+        } yield assertTrue(
+          http2Response.status != Status.SwitchingProtocols, // HTTP/2 should not allow 101 Switching Protocols
+          http11Response.status == Status.SwitchingProtocols,// HTTP/1.1 should allow 101 Switching Protocols
         )
       } +
       test("should return 400 Bad Request if Host header is missing") {
