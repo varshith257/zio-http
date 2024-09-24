@@ -7,7 +7,7 @@ import zio.test._
 
 import zio.http._
 
-object RequestSpec extends ZIOHttpSpec {
+object ConformanceSpec extends ZIOHttpSpec {
 
   override def spec =
     suite("ConformanceSpec")(
