@@ -519,32 +519,33 @@ object ServerSpec extends RoutesRunnableSpec {
         assertZIO(res)(isSome(anything))
       } +
       test("should send 100 Continue before 101 Switching Protocols when both Upgrade and Expect headers are present") {
-        val upgradeRoute = Method.GET / "upgrade" -> Handler.fromZIO {
-          for {
-            // First, we send 100 Continue indicating readiness for the client to continue sending the body
-            _        <- ZIO.succeed(Response.status(Status.Continue))
-            _        <- ZIO.sleep(500.millis)
-            response <- ZIO.succeed(
-              Response
-                .status(Status.SwitchingProtocols)
-                .addHeader(Header.Connection.KeepAlive)             // Use predefined header value
-                .addHeader(Header.Upgrade.Protocol("https", "1.1")),// Use Upgrade Protocol
-            )
-          } yield response
+        val continueHandler = Handler.fromZIO {
+          ZIO.succeed(Response.status(Status.Continue))
         }
 
-        val app = Routes(upgradeRoute)
-
-        // Build request with both Expect: 100-continue and Upgrade headers
-        val request = Request
-          .get("/upgrade")
-          .addHeader(Header.Expect.`100-continue`)            // Use predefined Expect header
+        val switchingProtocolsHandler = Handler.fromZIO {
+          ZIO.succeed(
+            Response
+              .status(Status.SwitchingProtocols)
+              .addHeader(Header.Connection.KeepAlive)
+              .addHeader(Header.Upgrade.Protocol("https", "1.1")),
+          )
+        }
+        val app                       = Routes(
+          Method.POST / "upgrade" -> continueHandler,          // Respond with 100 Continue
+          Method.GET / "switch"   -> switchingProtocolsHandler,// Respond with 101 SwitchingProtocols
+        )
+        val initialRequest            = Request
+          .post("/upgrade")
+          .addHeader(Header.Expect.`100-continue`)
           .addHeader(Header.Connection.KeepAlive)
-          .addHeader(Header.Upgrade.Protocol("https", "1.1")) // Use predefined Upgrade header
+          .addHeader(Header.Upgrade.Protocol("https", "1.1"))
+
+        val followUpRequest = Request.get("/switch")
 
         for {
-          firstResponse  <- app.runZIO(request) // This should be the 100 Continue response
-          secondResponse <- app.runZIO(request) // This should be the 101 Switching Protocols response
+          firstResponse  <- app.runZIO(initialRequest)  // This should be the 100 Continue response
+          secondResponse <- app.runZIO(followUpRequest) // This should be the 101 Switching Protocols response
 
         } yield assertTrue(
           firstResponse.status == Status.Continue,            // Checks first response is 100 Continue
