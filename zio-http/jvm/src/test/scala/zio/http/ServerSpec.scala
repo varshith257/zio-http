@@ -519,33 +519,39 @@ object ServerSpec extends RoutesRunnableSpec {
         assertZIO(res)(isSome(anything))
       } +
       test("should send 100 Continue before 101 Switching Protocols when both Upgrade and Expect headers are present") {
-        val upgradeRoute = Method.POST / "upgrade" -> Handler.fromZIO {
-          for {
-            _        <- ZIO.succeed(Response.status(Status.Continue))
-            _        <- ZIO.sleep(500.millis)
-            response <- ZIO.succeed(
-              Response
-                .status(Status.SwitchingProtocols)
-                .addHeader(Header.Connection.KeepAlive)
-                .addHeader(Header.Upgrade.Protocol("https", "1.1")),
-            )
-          } yield response
+        val continueHandler = Handler.fromZIO {
+          ZIO.succeed(Response.status(Status.Continue))
         }
 
-        val app = Routes(upgradeRoute)
-
-        val request = Request
+        val switchingProtocolsHandler = Handler.fromZIO {
+          ZIO.succeed(
+            Response
+              .status(Status.SwitchingProtocols)
+              .addHeader(Header.Connection.KeepAlive)
+              .addHeader(Header.Upgrade.Protocol("https", "1.1")),
+          )
+        }
+        val app                       = Routes(
+          Method.POST / "upgrade" -> continueHandler,
+          Method.GET / "switch"   -> switchingProtocolsHandler,
+        )
+        val initialRequest            = Request
           .post("/upgrade", Body.empty)
           .addHeader(Header.Expect.`100-continue`)
           .addHeader(Header.Connection.KeepAlive)
           .addHeader(Header.Upgrade.Protocol("https", "1.1"))
 
+        val followUpRequest = Request.get("/switch")
+
         for {
-          response <- app.runZIO(request)
+          firstResponse  <- app.runZIO(initialRequest)
+          secondResponse <- app.runZIO(followUpRequest)
+
         } yield assertTrue(
-          response.status == Status.SwitchingProtocols,
-          response.headers.contains(Header.Upgrade.name),
-          response.headers.contains(Header.Connection.name),
+          firstResponse.status == Status.Continue,            // Checks first response is 100 Continue
+          secondResponse.status == Status.SwitchingProtocols, // Checks second response is 101 Switching Protocols
+          secondResponse.headers.contains(Header.Upgrade.name),
+          secondResponse.headers.contains(Header.Connection.name),
         )
       } +
       test("should not send body for HEAD requests") {
@@ -554,11 +560,52 @@ object ServerSpec extends RoutesRunnableSpec {
         val app         = Routes(route)
         val headRequest = Request.head("/test")
         for {
-          response <- app.runZIO(headRequest) // Make a HEAD request
+          response <- app.runZIO(headRequest)
         } yield assertTrue(
           response.status == Status.Ok,                        // Ensure we get a 200 OK status
           response.body.isEmpty,                               // Ensure no body is sent for HEAD request
           response.headers.contains(Header.ContentLength.name),// Ensure the Content-Length header is still present
+        )
+      } +
+      test("should not include Content-Length header for 2XX CONNECT responses") {
+        val connectHandler = Handler.fromZIO {
+          ZIO.succeed(
+            Response
+              .status(Status.Ok)                      // Simulate a successful 2XX response
+              .addHeader(Header.Connection.KeepAlive),// No Content-Length header
+          )
+        }
+
+        val app = Routes(Method.CONNECT / "example.com:443" -> connectHandler)
+
+        val connectRequest = Request
+          .custom(method = Method.CONNECT, path = "example.com:443") // Simulate CONNECT request
+          .addHeader(Header.Host("example.com:443"))
+
+        for {
+          response <- app.runZIO(connectRequest)
+        } yield assertTrue(
+          response.status == Status.Ok,                          // Ensure it's a 2XX response
+          !response.headers.contains(Header.ContentLength.name), // Check Content-Length header is absent
+          response.headers.contains(Header.Connection.name),     // Check Connection header is present
+        )
+      } +
+      test("should return 400 Bad Request for invalid CONNECT request") {
+        val invalidConnectHandler = Handler.fromZIO {
+          ZIO.succeed(
+            Response.status(Status.BadRequest), // Return 400 Bad Request for invalid port
+          )
+        }
+
+        val app = Routes(Method.CONNECT / "example.com:" -> invalidConnectHandler) // Missing port number
+
+        val invalidConnectRequest = Request
+          .custom(method = Method.CONNECT, path = "example.com:") // Invalid CONNECT request
+
+        for {
+          response <- app.runZIO(invalidConnectRequest)
+        } yield assertTrue(
+          response.status == Status.BadRequest, // Expect 400 Bad Request
         )
       } +
       test("should return 400 Bad Request if Host header is missing") {
