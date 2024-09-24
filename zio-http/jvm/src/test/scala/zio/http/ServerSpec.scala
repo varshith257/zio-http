@@ -574,10 +574,12 @@ object ServerSpec extends RoutesRunnableSpec {
           ),
         )
 
-        val request = Request(
-          method = Method.CONNECT,
-          url = URL.decode("example.com:443").toOption.get,
-        )
+        val decodedUrl = URL.decode("example.com:443")
+
+        val request = decodedUrl match {
+          case Some(url) => Request(method = Method.CONNECT, url = url)
+          case None      => throw new RuntimeException("Failed to decode the URL")
+        }
 
         for {
           response <- app.runZIO(request)
