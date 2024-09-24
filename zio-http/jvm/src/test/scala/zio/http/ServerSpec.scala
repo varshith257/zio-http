@@ -702,7 +702,7 @@ object ServerSpec extends RoutesRunnableSpec {
             ZIO.succeed(
               Response
                 .status(Status.Ok)
-                .addHeader(Custom("A", "1\r\nB: 2")),
+                .addHeader(Header.Custom("A", "1\r\nB: 2")),
             )
           },
         )
