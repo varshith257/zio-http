@@ -625,6 +625,43 @@ object ServerSpec extends RoutesRunnableSpec {
           response.headers.contains(Header.Upgrade.name),
         )
       } +
+      test("should not switch to a protocol not indicated by the client in the Upgrade header") {
+        val app = Routes(
+          Method.GET / "switch" -> Handler.fromZIO { request =>
+            val clientUpgrade = request.headers.get(Header.Upgrade.name)
+
+            ZIO.succeed {
+              clientUpgrade match {
+                case Some("https/1.1") =>
+                  Response
+                    .status(Status.SwitchingProtocols)
+                    .addHeader(Header.Upgrade.Protocol("https", "1.1"))
+                case Some(_)           =>
+                  Response
+                    .status(Status.SwitchingProtocols)
+                    .addHeader(Header.Upgrade.Protocol("http/2", "2.0"))
+                case None              =>
+                  Response.status(Status.Ok)
+              }
+            }
+          },
+        )
+
+        val requestWithUpgrade = Request
+          .get("/switch")
+          .addHeader(Header.Upgrade.Protocol("https", "1.1"))
+
+        val requestWithoutUpgrade = Request.get("/switch")
+
+        for {
+          responseWithUpgrade    <- app.runZIO(requestWithUpgrade)
+          responseWithoutUpgrade <- app.runZIO(requestWithoutUpgrade)
+        } yield assertTrue(
+          responseWithUpgrade.status == Status.SwitchingProtocols,
+          responseWithUpgrade.headers.contains(Header.Upgrade.name),
+          responseWithoutUpgrade.status == Status.Ok,
+        )
+      } +
       test("should return 400 Bad Request if Host header is missing") {
         val route              = Method.GET / "test" -> Handler.ok
         val app                = Routes(route)
