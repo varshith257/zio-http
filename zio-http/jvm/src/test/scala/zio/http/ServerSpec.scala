@@ -537,7 +537,7 @@ object ServerSpec extends RoutesRunnableSpec {
 
         // Build request with both Expect: 100-continue and Upgrade headers
         val request = Request
-        val request = Request
+          .get("/upgrade")
           .addHeader(Header.Expect.`100-continue`)            // Use predefined Expect header
           .addHeader(Header.Connection.KeepAlive)
           .addHeader(Header.Upgrade.Protocol("https", "1.1")) // Use predefined Upgrade header
