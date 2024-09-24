@@ -555,8 +555,10 @@ object ServerSpec extends RoutesRunnableSpec {
         )
       } +
       test("should not send body for HEAD requests") {
-        val route = Method.GET / "test" -> Handler.fromResponse(Response.text("This is the body"))
-
+        val route       = Routes(
+          Method.GET / "test"  -> Handler.fromResponse(Response.text("This is the body")),
+          Method.HEAD / "test" -> Handler.fromResponse(Response(status = Status.Ok)),
+        )
         val app         = Routes(route)
         val headRequest = Request.head("/test")
         for {
