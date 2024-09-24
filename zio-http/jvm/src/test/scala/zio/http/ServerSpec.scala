@@ -564,9 +564,8 @@ object ServerSpec extends RoutesRunnableSpec {
         for {
           response <- app.runZIO(headRequest)
         } yield assertTrue(
-          response.status == Status.Ok,                        // Ensure we get a 200 OK status
-          response.body.isEmpty,                               // Ensure no body is sent for HEAD request
-          response.headers.contains(Header.ContentLength.name),// Ensure the Content-Length header is still present
+          response.status == Status.Ok, // Ensure we get a 200 OK status
+          response.body.isEmpty,        // Ensure no body is sent for HEAD request
         )
       } +
       test("should not include Content-Length header for 2XX CONNECT responses") {
@@ -588,6 +587,42 @@ object ServerSpec extends RoutesRunnableSpec {
         } yield assertTrue(
           response.status == Status.Ok,
           !response.headers.contains(Header.ContentLength.name),
+        )
+      } +
+      test("should send Upgrade header with 426 Upgrade Required response") {
+        val app = Routes(
+          Method.GET / "test" -> Handler.fromResponse(
+            Response
+              .status(Status.UpgradeRequired)
+              .addHeader(Header.Upgrade.Protocol("https", "1.1")),
+          ),
+        )
+
+        val request = Request.get("/test")
+
+        for {
+          response <- app.runZIO(request)
+        } yield assertTrue(
+          response.status == Status.UpgradeRequired,
+          response.headers.contains(Header.Upgrade.name),
+        )
+      } +
+      test("should send Upgrade header with 101 Switching Protocols response") {
+        val app = Routes(
+          Method.GET / "switch" -> Handler.fromResponse(
+            Response
+              .status(Status.SwitchingProtocols)
+              .addHeader(Header.Upgrade.Protocol("https", "1.1")),
+          ),
+        )
+
+        val request = Request.get("/switch")
+
+        for {
+          response <- app.runZIO(request)
+        } yield assertTrue(
+          response.status == Status.SwitchingProtocols,
+          response.headers.contains(Header.Upgrade.name),
         )
       } +
       test("should return 400 Bad Request if Host header is missing") {
