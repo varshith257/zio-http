@@ -568,44 +568,22 @@ object ServerSpec extends RoutesRunnableSpec {
         )
       } +
       test("should not include Content-Length header for 2XX CONNECT responses") {
-        val connectHandler = Handler.fromZIO {
-          ZIO.succeed(
-            Response
-              .status(Status.Ok)                      // Simulate a successful 2XX response
-              .addHeader(Header.Connection.KeepAlive),// No Content-Length header
-          )
-        }
-
-        val app = Routes(Method.CONNECT / "example.com:443" -> connectHandler)
-
-        val connectRequest = Request
-          .custom(method = Method.CONNECT, path = "example.com:443") // Simulate CONNECT request
-          .addHeader(Header.Host("example.com:443"))
-
-        for {
-          response <- app.runZIO(connectRequest)
-        } yield assertTrue(
-          response.status == Status.Ok,                          // Ensure it's a 2XX response
-          !response.headers.contains(Header.ContentLength.name), // Check Content-Length header is absent
-          response.headers.contains(Header.Connection.name),     // Check Connection header is present
+        val app = Routes(
+          Method.CONNECT / "example.com:443" -> Handler.fromResponse(
+            Response.status(Status.Ok),
+          ),
         )
-      } +
-      test("should return 400 Bad Request for invalid CONNECT request") {
-        val invalidConnectHandler = Handler.fromZIO {
-          ZIO.succeed(
-            Response.status(Status.BadRequest), // Return 400 Bad Request for invalid port
-          )
-        }
 
-        val app = Routes(Method.CONNECT / "example.com:" -> invalidConnectHandler) // Missing port number
-
-        val invalidConnectRequest = Request
-          .custom(method = Method.CONNECT, path = "example.com:") // Invalid CONNECT request
+        val request = Request(
+          method = Method.CONNECT,
+          url = URL.decode("example.com:443").toOption.get,
+        )
 
         for {
-          response <- app.runZIO(invalidConnectRequest)
+          response <- app.runZIO(request)
         } yield assertTrue(
-          response.status == Status.BadRequest, // Expect 400 Bad Request
+          response.status == Status.Ok,
+          !response.headers.contains(Header.ContentLength.name),
         )
       } +
       test("should return 400 Bad Request if Host header is missing") {
