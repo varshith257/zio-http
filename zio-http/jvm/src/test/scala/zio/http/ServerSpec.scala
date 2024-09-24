@@ -574,7 +574,7 @@ object ServerSpec extends RoutesRunnableSpec {
           ),
         )
 
-        val decodedUrl = URL.decode("example.com:443")
+        val decodedUrl = URL.decode("https://example.com:443")
 
         val request = decodedUrl match {
           case Right(url) => Request(method = Method.CONNECT, url = url)
