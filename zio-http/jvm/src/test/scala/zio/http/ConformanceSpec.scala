@@ -11,6 +11,107 @@ object ConformanceSpec extends ZIOHttpSpec {
 
   override def spec =
     suite("ConformanceSpec")(
+      suite("Statuscodes")(
+        test("should not send body for 204 No Content responses(code_204_no_additional_content)") {
+          val app = Routes(
+            Method.GET / "no-content" -> Handler.fromResponse(
+              Response.status(Status.NoContent),
+            ),
+          )
+
+          val request = Request.get("/no-content")
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.NoContent,
+            response.body.isEmpty,
+          )
+        },
+        test("should not send body for 205 Reset Content responses(code_205_no_content_allowed)") {
+          val app = Routes(
+            Method.GET / "reset-content" -> Handler.fromResponse(
+              Response.status(Status.ResetContent),
+            ),
+          )
+
+          val request = Request.get("/reset-content")
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(response.status == Status.ResetContent, response.body.isEmpty)
+        },
+        test("should include Content-Range for 206 Partial Content response(code_206_content_range)") {
+          val app = Routes(
+            Method.GET / "partial" -> Handler.fromResponse(
+              Response
+                .status(Status.PartialContent)
+                .addHeader(Header.ContentRange("bytes 0-14/14")),
+            ),
+          )
+
+          val request = Request.get("/partial")
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.PartialContent,
+            response.headers.contains(Header.ContentRange.name),
+          )
+        },
+        test(
+          "should not include Content-Range in header for multipart/byteranges response(code_206_content_range_of_multiple_part_response)",
+        ) {
+          val app = Routes(
+            Method.GET / "partial" -> Handler.fromResponse(
+              Response
+                .status(Status.PartialContent)
+                .addHeader(Header.ContentType("multipart/byteranges; boundary=A")),
+            ),
+          )
+
+          val request = Request.get("/partial")
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.PartialContent,
+            !response.headers.contains(Header.ContentRange.name),
+            response.headers.contains(Header.ContentType.name),
+          )
+        },
+        test("should include necessary headers in 206 Partial Content response(code_206_headers)") {
+          val app = Routes(
+            Method.GET / "partial" -> Handler.fromResponse(
+              Response
+                .status(Status.PartialContent)
+                .addHeader(Header.ETag("abc"))
+                .addHeader(Header.CacheControl("max-age=3600")),
+            ),
+            Method.GET / "full"    -> Handler.fromResponse(
+              Response
+                .status(Status.Ok)
+                .addHeader(Header.ETag("abc"))
+                .addHeader(Header.CacheControl("max-age=3600")),
+            ),
+          )
+
+          val requestWithRange    = Request.get("/partial").addHeader(Header.Range("bytes=0-14"))
+          val requestWithoutRange = Request.get("/full")
+
+          for {
+            responseWithRange    <- app.runZIO(requestWithRange)
+            responseWithoutRange <- app.runZIO(requestWithoutRange)
+          } yield assertTrue(
+            responseWithRange.status == Status.PartialContent,
+            responseWithRange.headers.contains(Header.ETag.name),
+            responseWithRange.headers.contains(Header.CacheControl.name),
+            responseWithoutRange.status == Status.Ok,
+          )
+        },
+      ),
+      suite("HTTP Headers")(
+      ),
       suite("conformance")(
         test(
           "should send 100 Continue before 101 Switching Protocols when both Upgrade and Expect headers are present",
@@ -183,35 +284,6 @@ object ConformanceSpec extends ZIOHttpSpec {
             responseWithUnsupportedUpgrade.status == Status.BadRequest,
             responseWithoutUpgrade.status == Status.Ok,
           )
-        },
-        test("should not send body for 204 No Content responses") {
-          val app = Routes(
-            Method.GET / "no-content" -> Handler.fromResponse(
-              Response.status(Status.NoContent),
-            ),
-          )
-
-          val request = Request.get("/no-content")
-
-          for {
-            response <- app.runZIO(request)
-          } yield assertTrue(
-            response.status == Status.NoContent,
-            response.body.isEmpty,
-          )
-        },
-        test("should not send body for 205 Reset Content responses") {
-          val app = Routes(
-            Method.GET / "reset-content" -> Handler.fromResponse(
-              Response.status(Status.ResetContent),
-            ),
-          )
-
-          val request = Request.get("/reset-content")
-
-          for {
-            response <- app.runZIO(request)
-          } yield assertTrue(response.status == Status.ResetContent, response.body.isEmpty)
         },
         test("should not generate a bare CR in headers for HTTP/1.1") {
           val app = Routes(
