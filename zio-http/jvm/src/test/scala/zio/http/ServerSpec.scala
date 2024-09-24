@@ -23,7 +23,6 @@ import zio._
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
-import zio.test.TestAspect.ignore
 
 import zio.stream.{ZPipeline, ZStream}
 
@@ -668,48 +667,50 @@ object ServerSpec extends RoutesRunnableSpec {
           responseWithoutUpgrade.status == Status.Ok,
         )
       } +
-      test("should not return 101 Switching Protocols for HTTP/2 requests") {
-        // This conformance test will be ignored until HTTP/2 is supported
-        val app = Routes(
-          Method.GET / "test" -> Handler.fromZIO {
-            ZIO.succeed(
-              Response.status(Status.SwitchingProtocols),
-            )
-          },
-        )
+    // NOTE: This conformance test will be ignored until HTTP/2 is supported
 
-        val http2Request = Request
-          .get("/test")
-          .copy(version = Version.Http_2)
+    // test("should not return 101 Switching Protocols for HTTP/2 requests") {
+    //   // NOTE: This conformance test will be ignored until HTTP/2 is supported
+    //   val app = Routes(
+    //     Method.GET / "test" -> Handler.fromZIO {
+    //       ZIO.succeed(
+    //         Response.status(Status.SwitchingProtocols),
+    //       )
+    //     },
+    //   )
 
-        val http11Request = Request
-          .get("/test")
-          .copy(version = Version.Http_1_1)
+    //   val http2Request = Request
+    //     .get("/test")
+    //     .copy(version = Version.Http_2)
 
-        for {
-          http2Response  <- app.runZIO(http2Request)
-          http11Response <- app.runZIO(http11Request)
-        } yield assertTrue(
-          http2Response.status == Status.Ok,
-          http11Response.status == Status.SwitchingProtocols,
-        )
-      } @@ ignore +
-      test("should not send body for 204 No Content responses") {
-        val app = Routes(
-          Method.GET / "no-content" -> Handler.fromResponse(
-            Response.status(Status.NoContent),
-          ),
-        )
+    //   val http11Request = Request
+    //     .get("/test")
+    //     .copy(version = Version.Http_1_1)
 
-        val request = Request.get("/no-content")
+    //   for {
+    //     http2Response  <- app.runZIO(http2Request)
+    //     http11Response <- app.runZIO(http11Request)
+    //   } yield assertTrue(
+    //     http2Response.status == Status.Ok,
+    //     http11Response.status == Status.SwitchingProtocols,
+    //   )
+    // } +
+    test("should not send body for 204 No Content responses") {
+      val app = Routes(
+        Method.GET / "no-content" -> Handler.fromResponse(
+          Response.status(Status.NoContent),
+        ),
+      )
 
-        for {
-          response <- app.runZIO(request)
-        } yield assertTrue(
-          response.status == Status.NoContent,
-          response.body.isEmpty,
-        )
-      } +
+      val request = Request.get("/no-content")
+
+      for {
+        response <- app.runZIO(request)
+      } yield assertTrue(
+        response.status == Status.NoContent,
+        response.body.isEmpty,
+      )
+    } +
       test("should not send body for 205 Reset Content responses") {
         val app = Routes(
           Method.GET / "reset-content" -> Handler.fromResponse(
