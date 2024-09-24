@@ -554,6 +554,19 @@ object ServerSpec extends RoutesRunnableSpec {
           secondResponse.headers.contains(Header.Connection.name),
         )
       } +
+      test("should not send body for HEAD requests") {
+        val getRoute = Method.GET / "test" -> Handler.fromResponse(Response.text("This is the body"))
+
+        val app         = Routes(getRoute)
+        val headRequest = Request.head("/test")
+        for {
+          response <- app.runZIO(headRequest) // Make a HEAD request
+        } yield assertTrue(
+          response.status == Status.Ok,                        // Ensure we get a 200 OK status
+          response.body.isEmpty,                               // Ensure no body is sent for HEAD request
+          response.headers.contains(Header.ContentLength.name),// Ensure the Content-Length header is still present
+        )
+      } +
       test("should return 400 Bad Request if Host header is missing") {
         val route              = Method.GET / "test" -> Handler.ok
         val app                = Routes(route)
