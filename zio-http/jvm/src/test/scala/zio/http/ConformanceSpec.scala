@@ -68,7 +68,9 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.GET / "partial" -> Handler.fromResponse(
               Response
                 .status(Status.PartialContent)
-                .addHeader(Header.ContentType(ContentType(MediaType.multipartByteranges, Some(boundary)))),
+                .addHeader(
+                  Header.ContentType(MediaType("multipart", "byteranges", Some(boundary))),
+                ),
             ),
           )
 
