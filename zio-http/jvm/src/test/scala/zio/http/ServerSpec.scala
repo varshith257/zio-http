@@ -569,7 +569,7 @@ object ServerSpec extends RoutesRunnableSpec {
       } +
       test("should not include Content-Length header for 2XX CONNECT responses") {
         val app = Routes(
-          Method.CONNECT / "example.com:443" -> Handler.fromResponse(
+          Method.CONNECT / "" -> Handler.fromResponse(
             Response.status(Status.Ok),
           ),
         )
