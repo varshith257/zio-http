@@ -62,11 +62,13 @@ object ConformanceSpec extends ZIOHttpSpec {
         test(
           "should not include Content-Range in header for multipart/byteranges response(code_206_content_range_of_multiple_part_response)",
         ) {
+          val boundary = "A12345"
+
           val app = Routes(
             Method.GET / "partial" -> Handler.fromResponse(
               Response
                 .status(Status.PartialContent)
-                .addHeader(Header.ContentType(MediaType.multipartByteranges("A"))),
+                .addHeader(Header.ContentType(MediaType("multipart", "byteranges", Some(zio.http.Boundary(boundary))))),
             ),
           )
 
@@ -91,12 +93,13 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.GET / "full"    -> Handler.fromResponse(
               Response
                 .status(Status.Ok)
-                .addHeader(Header.ETag("abc"))
-                .addHeader(Header.CacheControl("max-age=3600")),
+                .addHeader(Header.ETag.Strong("abc"))
+                .addHeader(Header.CacheControl.MaxAge(3600)),
             ),
           )
 
-          val requestWithRange    = Request.get("/partial").addHeader(Header.Range("bytes=0-14"))
+          val requestWithRange    =
+            Request.get("/partial").addHeader(Header.Range.Single("bytes", 0, Some(14)))
           val requestWithoutRange = Request.get("/full")
 
           for {
