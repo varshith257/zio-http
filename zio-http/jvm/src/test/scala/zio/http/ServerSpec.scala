@@ -627,7 +627,7 @@ object ServerSpec extends RoutesRunnableSpec {
       } +
       test("should not switch to a protocol not indicated by the client in the Upgrade header") {
         val app = Routes(
-          Method.GET / "switch" -> Handler.fromZIO { request =>
+          Method.GET / "switch" -> Handler.fromZIO { (request: Request) =>
             val clientUpgrade = request.headers.get(Header.Upgrade.name)
 
             ZIO.succeed {
@@ -637,9 +637,7 @@ object ServerSpec extends RoutesRunnableSpec {
                     .status(Status.SwitchingProtocols)
                     .addHeader(Header.Upgrade.Protocol("https", "1.1"))
                 case Some(_)           =>
-                  Response
-                    .status(Status.SwitchingProtocols)
-                    .addHeader(Header.Upgrade.Protocol("http/2", "2.0"))
+                  Response.status(Status.BadRequest)
                 case None              =>
                   Response.status(Status.Ok)
               }
@@ -651,14 +649,21 @@ object ServerSpec extends RoutesRunnableSpec {
           .get("/switch")
           .addHeader(Header.Upgrade.Protocol("https", "1.1"))
 
+        val requestWithUnsupportedUpgrade = Request
+          .get("/switch")
+          .addHeader(Header.Upgrade.Protocol("unsupported", "1.0"))
+
         val requestWithoutUpgrade = Request.get("/switch")
 
         for {
-          responseWithUpgrade    <- app.runZIO(requestWithUpgrade)
-          responseWithoutUpgrade <- app.runZIO(requestWithoutUpgrade)
+          responseWithUpgrade            <- app.runZIO(requestWithUpgrade)
+          responseWithUnsupportedUpgrade <- app.runZIO(requestWithUnsupportedUpgrade)
+          responseWithoutUpgrade         <- app.runZIO(requestWithoutUpgrade)
+
         } yield assertTrue(
           responseWithUpgrade.status == Status.SwitchingProtocols,
           responseWithUpgrade.headers.contains(Header.Upgrade.name),
+          responseWithUnsupportedUpgrade.status == Status.BadRequest,
           responseWithoutUpgrade.status == Status.Ok,
         )
       } +
