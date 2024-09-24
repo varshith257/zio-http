@@ -522,8 +522,11 @@ object ServerSpec extends RoutesRunnableSpec {
         val upgradeRoute = Method.GET / "upgrade" -> Handler.fromZIO {
           ZIO.succeed(
             Response
+              .status(Status.Continue)
+              .addHeader(Header.Upgrade.withValue("https")),
+          ) *> ZIO.succeed(
+            Response
               .status(Status.SwitchingProtocols)
-              .addHeader(Header.Upgrade.withValue("https"))
               .addHeader(Header.Connection.Upgrade),
           )
         }
@@ -538,11 +541,14 @@ object ServerSpec extends RoutesRunnableSpec {
           .addHeader(Header.Upgrade.withValue("https"))
 
         for {
-          response <- app.runZIO(request)
+          firstResponse  <- app.runZIO(request) // This should be the 100 Continue response
+          secondResponse <- app.runZIO(request) // This should be the 101 Switching Protocols response
+
         } yield assertTrue(
-          response.status == Status.Continue || response.status == Status.SwitchingProtocols, // The test will expect both statuses
-          response.headers.contains(Header.Upgrade.name),
-          response.headers.contains(Header.Connection.name),
+          firstResponse.status == Status.Continue,            // Checks first response is 100 Continue
+          secondResponse.status == Status.SwitchingProtocols, // Checks second response is 101 Switching Protocols
+          secondResponse.headers.contains(Header.Upgrade.name),
+          secondResponse.headers.contains(Header.Connection.name),
         )
       } +
       test("should return 400 Bad Request if Host header is missing") {
