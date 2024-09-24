@@ -667,50 +667,22 @@ object ServerSpec extends RoutesRunnableSpec {
           responseWithoutUpgrade.status == Status.Ok,
         )
       } +
-    // NOTE: This conformance test will be ignored until HTTP/2 is supported
+      test("should not send body for 204 No Content responses") {
+        val app = Routes(
+          Method.GET / "no-content" -> Handler.fromResponse(
+            Response.status(Status.NoContent),
+          ),
+        )
 
-    // test("should not return 101 Switching Protocols for HTTP/2 requests") {
-    //   // NOTE: This conformance test will be ignored until HTTP/2 is supported
-    //   val app = Routes(
-    //     Method.GET / "test" -> Handler.fromZIO {
-    //       ZIO.succeed(
-    //         Response.status(Status.SwitchingProtocols),
-    //       )
-    //     },
-    //   )
+        val request = Request.get("/no-content")
 
-    //   val http2Request = Request
-    //     .get("/test")
-    //     .copy(version = Version.Http_2)
-
-    //   val http11Request = Request
-    //     .get("/test")
-    //     .copy(version = Version.Http_1_1)
-
-    //   for {
-    //     http2Response  <- app.runZIO(http2Request)
-    //     http11Response <- app.runZIO(http11Request)
-    //   } yield assertTrue(
-    //     http2Response.status == Status.Ok,
-    //     http11Response.status == Status.SwitchingProtocols,
-    //   )
-    // } +
-    test("should not send body for 204 No Content responses") {
-      val app = Routes(
-        Method.GET / "no-content" -> Handler.fromResponse(
-          Response.status(Status.NoContent),
-        ),
-      )
-
-      val request = Request.get("/no-content")
-
-      for {
-        response <- app.runZIO(request)
-      } yield assertTrue(
-        response.status == Status.NoContent,
-        response.body.isEmpty,
-      )
-    } +
+        for {
+          response <- app.runZIO(request)
+        } yield assertTrue(
+          response.status == Status.NoContent,
+          response.body.isEmpty,
+        )
+      } +
       test("should not send body for 205 Reset Content responses") {
         val app = Routes(
           Method.GET / "reset-content" -> Handler.fromResponse(
