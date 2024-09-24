@@ -589,6 +589,27 @@ object ServerSpec extends RoutesRunnableSpec {
           !response.headers.contains(Header.ContentLength.name),
         )
       } +
+      test("should not include Transfer-Encoding header for 2XX CONNECT responses") {
+        val app = Routes(
+          Method.CONNECT / "" -> Handler.fromResponse(
+            Response.status(Status.Ok),
+          ),
+        )
+
+        val decodedUrl = URL.decode("https://example.com:443")
+
+        val request = decodedUrl match {
+          case Right(url) => Request(method = Method.CONNECT, url = url)
+          case Left(_)    => throw new RuntimeException("Failed to decode the URL")
+        }
+
+        for {
+          response <- app.runZIO(request)
+        } yield assertTrue(
+          response.status == Status.Ok,
+          !response.headers.contains(Header.TransferEncoding.name),
+        )
+      } +
       test("should send Upgrade header with 426 Upgrade Required response") {
         val app = Routes(
           Method.GET / "test" -> Handler.fromResponse(
