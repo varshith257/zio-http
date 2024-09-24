@@ -577,20 +577,37 @@ object ServerSpec extends RoutesRunnableSpec {
           assertTrue(response.status == Status.BadRequest) // Expecting a 400 Bad Request
         }
       } +
-      test("should not include Content-Length header for 1xx responses") {
-        val statusCodes = List(Status.Continue, Status.SwitchingProtocols, Status.Processing)
+      test("should not include Content-Length header for 1xx and 204 No Content responses") {
+        // Defining routes for different status codes
+        val route1xxContinue = Method.GET / "continue" -> Handler.fromResponse(Response(status = Status.Continue))
+        val route1xxSwitch   =
+          Method.GET / "switching-protocols" -> Handler.fromResponse(Response(status = Status.SwitchingProtocols))
+        val route1xxProcess   = Method.GET / "processing" -> Handler.fromResponse(Response(status = Status.Processing))
+        val route204NoContent = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
 
-        ZIO
-          .foreach(statusCodes) { status =>
-            val route = Method.GET / "info" -> Handler.fromResponse(Response(status = status))
-            val app   = Routes(route)
+        // Combining routes into a single application
+        val app = Routes(route1xxContinue, route1xxSwitch, route1xxProcess, route204NoContent)
 
-            val request = Request.get("/info")
-            for {
-              response <- app.runZIO(request)
-            } yield !response.headers.contains(Header.ContentLength.name) // Return boolean result
-          }
-          .map(results => assertTrue(results.forall(identity))) // Collect all results and assert they are all true
+        // Creating corresponding requests
+        val requestContinue  = Request.get("/continue")
+        val requestSwitch    = Request.get("/switching-protocols")
+        val requestProcess   = Request.get("/processing")
+        val requestNoContent = Request.get("/no-content")
+
+        for {
+          // Executing requests
+          responseContinue  <- app.runZIO(requestContinue)
+          responseSwitch    <- app.runZIO(requestSwitch)
+          responseProcess   <- app.runZIO(requestProcess)
+          responseNoContent <- app.runZIO(requestNoContent)
+
+          // Asserting that no responses have a Content-Length header
+        } yield assertTrue(
+          !responseContinue.headers.contains(Header.ContentLength.name),
+          !responseSwitch.headers.contains(Header.ContentLength.name),
+          !responseProcess.headers.contains(Header.ContentLength.name),
+          !responseNoContent.headers.contains(Header.ContentLength.name),
+        )
       } +
       test("should not include Content-Length header for 204 No Content responses") {
         val route = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))

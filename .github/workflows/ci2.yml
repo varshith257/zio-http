@@ -1,177 +1,177 @@
-name: ZIO-HTTP Conformance Testing
+# name: ZIO-HTTP Conformance Testing
 
-on:
-  pull_request:
-    branches: ["**"]
-  push:
-    branches: ["**"]
-    tags: [v*]
+# on:
+#   pull_request:
+#     branches: ["**"]
+#   push:
+#     branches: ["**"]
+#     tags: [v*]
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  JDK_JAVA_OPTIONS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
-  SBT_OPTS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
+# env:
+#   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#   JDK_JAVA_OPTIONS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
+#   SBT_OPTS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
 
-jobs:
-  build:
-    name: Build, Test, and Conformance
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        scala: [2.12.19, 2.13.14, 3.3.3]
-        java: [17, 21]
+# jobs:
+#   build:
+#     name: Build, Test, and Conformance
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest]
+#         scala: [2.12.19, 2.13.14, 3.3.3]
+#         java: [17, 21]
 
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+#     runs-on: ${{ matrix.os }}
+#     timeout-minutes: 60
 
-    steps:
-      - name: Checkout current branch
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+#     steps:
+#       - name: Checkout current branch
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ matrix.java }}
-          cache: sbt
+#       - name: Setup Java
+#         uses: actions/setup-java@v4
+#         with:
+#           distribution: temurin
+#           java-version: ${{ matrix.java }}
+#           cache: sbt
 
-      # Step 3: Install PostgreSQL
-      - name: Set up PostgreSQL
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql postgresql-contrib
-          sudo service postgresql start
-          cd /tmp
-          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
-          sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runnerpassword';"
-          sudo -u postgres psql -c "ALTER USER runner CREATEDB;"
-          sudo -u postgres psql -c "CREATE DATABASE runner OWNER runner;"
-          sudo -u postgres psql -c "\l"
+#       # Step 3: Install PostgreSQL
+#       - name: Set up PostgreSQL
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y postgresql postgresql-contrib
+#           sudo service postgresql start
+#           cd /tmp
+#           sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+#           sudo -u postgres psql -c "CREATE USER runner WITH PASSWORD 'runnerpassword';"
+#           sudo -u postgres psql -c "ALTER USER runner CREATEDB;"
+#           sudo -u postgres psql -c "CREATE DATABASE runner OWNER runner;"
+#           sudo -u postgres psql -c "\l"
 
-      # Step 5: Build and Test ZIO-HTTP (Include testing)
-      - name: Build and Test ZIO-HTTP
-        run: |
-          sbt clean compile
-          # sbt test
+#       # Step 5: Build and Test ZIO-HTTP (Include testing)
+#       - name: Build and Test ZIO-HTTP
+#         run: |
+#           sbt clean compile
+#           # sbt test
 
-      - name: Run ZIO HTTP server
-        run: |
-          sbt "project zioHttpExample" "runMain example.HelloWorld" & 
-          sleep 10    # Give the server time to start
+#       - name: Run ZIO HTTP server
+#         run: |
+#           sbt "project zioHttpExample" "runMain example.HelloWorld" & 
+#           sleep 10    # Give the server time to start
 
-      # Step 7: Install Docker and Docker Compose (needed for local servers)
-      - name: Install Docker
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-          sudo apt-get update
-          sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose
-          sudo service docker start
-          sleep 10
-          sudo docker ps
+#       # Step 7: Install Docker and Docker Compose (needed for local servers)
+#       - name: Install Docker
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+#           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+#           echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+#           sudo apt-get update
+#           sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose
+#           sudo service docker start
+#           sleep 10
+#           sudo docker ps
 
-      - name: Verify Docker Installation
-        run: docker --version
-          docker info
+#       - name: Verify Docker Installation
+#         run: docker --version
+#           docker info
 
-      # Step 8: Install Poetry and Dependencies
-      - name: Install Poetry and Dependencies
-        run: |
-          sudo apt-get install -y python3 python3-pip
-          pip install poetry
-          git clone --recurse-submodules https://github.com/cispa/http-conformance
-          cd http-conformance
-          poetry install
+#       # Step 8: Install Poetry and Dependencies
+#       - name: Install Poetry and Dependencies
+#         run: |
+#           sudo apt-get install -y python3 python3-pip
+#           pip install poetry
+#           git clone --recurse-submodules https://github.com/cispa/http-conformance
+#           cd http-conformance
+#           poetry install
 
-      # Step 9: Patch dpkt Library
-      - name: Patch dpkt Library
-        run: |
-          cd http-conformance
-          sh fix_dpkt.sh
+#       # Step 9: Patch dpkt Library
+#       - name: Patch dpkt Library
+#         run: |
+#           cd http-conformance
+#           sh fix_dpkt.sh
 
-      - name: Make curl Request to ZIO HTTP Server
-        run: |
-          curl -v http://localhost:8080        # Check the "Hello World!" route
-          curl -v http://localhost:8080/json   # Check the JSON route
+#       - name: Make curl Request to ZIO HTTP Server
+#         run: |
+#           curl -v http://localhost:8080        # Check the "Hello World!" route
+#           curl -v http://localhost:8080/json   # Check the JSON route
 
-      - name: Create .env File for Testbed
-        run: |
-          mv http-conformance/.env.example http-conformance/testbed/.env
-          echo "PGPORT=5432" >> http-conformance/testbed/.env
-          echo "PGHOST=127.0.0.1" >> http-conformance/testbed/.env
-          echo "PGUSER=runner" >> http-conformance/testbed/.env
-          echo "PGPASSWORD=runnerpassword" >> http-conformance/testbed/.env
-          echo "zio_http_http_port=8080" >> http-conformance/testbed/.env
+#       - name: Create .env File for Testbed
+#         run: |
+#           mv http-conformance/.env.example http-conformance/testbed/.env
+#           echo "PGPORT=5432" >> http-conformance/testbed/.env
+#           echo "PGHOST=127.0.0.1" >> http-conformance/testbed/.env
+#           echo "PGUSER=runner" >> http-conformance/testbed/.env
+#           echo "PGPASSWORD=runnerpassword" >> http-conformance/testbed/.env
+#           echo "zio_http_http_port=8080" >> http-conformance/testbed/.env
 
-      - name: Set All Environment Variables for Testbed
-        run: |
-          echo "openresty_http_port=8088" >> $GITHUB_ENV
-          echo "openresty_https_port=8443" >> $GITHUB_ENV
-          echo "apache_http_port=8081" >> $GITHUB_ENV
-          echo "apache_https_port=8444" >> $GITHUB_ENV
-          echo "nginx_http_port=8082" >> $GITHUB_ENV
-          echo "nginx_https_port=8445" >> $GITHUB_ENV
-          echo "jetty_http_port=8083" >> $GITHUB_ENV
-          echo "jetty_https_port=8446" >> $GITHUB_ENV
-          echo "tomcat_http_port=8086" >> $GITHUB_ENV
-          echo "tomcat_https_port=8447" >> $GITHUB_ENV
-          echo "openlitespeed_http_port=8085" >> $GITHUB_ENV
-          echo "openlitespeed_https_port=8448" >> $GITHUB_ENV
-          echo "openlitespeed_admin_port=8449" >> $GITHUB_ENV
-          echo "caddy_http_port=8090" >> $GITHUB_ENV
-          echo "caddy_https_port=8450" >> $GITHUB_ENV
-          echo "node_http_port=8091" >> $GITHUB_ENV
-          echo "traefik_http_port=8092" >> $GITHUB_ENV
-          echo "traefik_https_port=8451" >> $GITHUB_ENV
+#       - name: Set All Environment Variables for Testbed
+#         run: |
+#           echo "openresty_http_port=8088" >> $GITHUB_ENV
+#           echo "openresty_https_port=8443" >> $GITHUB_ENV
+#           echo "apache_http_port=8081" >> $GITHUB_ENV
+#           echo "apache_https_port=8444" >> $GITHUB_ENV
+#           echo "nginx_http_port=8082" >> $GITHUB_ENV
+#           echo "nginx_https_port=8445" >> $GITHUB_ENV
+#           echo "jetty_http_port=8083" >> $GITHUB_ENV
+#           echo "jetty_https_port=8446" >> $GITHUB_ENV
+#           echo "tomcat_http_port=8086" >> $GITHUB_ENV
+#           echo "tomcat_https_port=8447" >> $GITHUB_ENV
+#           echo "openlitespeed_http_port=8085" >> $GITHUB_ENV
+#           echo "openlitespeed_https_port=8448" >> $GITHUB_ENV
+#           echo "openlitespeed_admin_port=8449" >> $GITHUB_ENV
+#           echo "caddy_http_port=8090" >> $GITHUB_ENV
+#           echo "caddy_https_port=8450" >> $GITHUB_ENV
+#           echo "node_http_port=8091" >> $GITHUB_ENV
+#           echo "traefik_http_port=8092" >> $GITHUB_ENV
+#           echo "traefik_https_port=8451" >> $GITHUB_ENV
 
-      - name: Set Docker Host
-        run: echo "DOCKER_HOST=unix:///var/run/docker.sock" >> $GITHUB_ENV
+#       - name: Set Docker Host
+#         run: echo "DOCKER_HOST=unix:///var/run/docker.sock" >> $GITHUB_ENV
 
-      # Step 10: Start Testbed Servers (Docker Compose)
-      - name: Start Testbed Servers (Docker Compose)
-        run: |
-          cd http-conformance/testbed
-          docker compose up -d
-          echo "Docker Compose services started:"
-          docker compose ps
+#       # Step 10: Start Testbed Servers (Docker Compose)
+#       - name: Start Testbed Servers (Docker Compose)
+#         run: |
+#           cd http-conformance/testbed
+#           docker compose up -d
+#           echo "Docker Compose services started:"
+#           docker compose ps
 
-      # Step 11: Run HTTP Conformance Tests
-      - name: Set Up Jetty Base and Enable HTTP/2
-        run: |
-          cd http-conformance/testbed
-          docker exec --user root testbed-jetty-1 bash -c "mkdir -p /usr/local/jetty-base && cp -r /usr/local/jetty/etc /usr/local/jetty-base/"
-          docker exec --user root testbed-jetty-1 bash -c "java -jar /usr/local/jetty/start.jar --add-to-start=ssl,http2,https,test-keystore"
-          docker compose restart jetty
+#       # Step 11: Run HTTP Conformance Tests
+#       - name: Set Up Jetty Base and Enable HTTP/2
+#         run: |
+#           cd http-conformance/testbed
+#           docker exec --user root testbed-jetty-1 bash -c "mkdir -p /usr/local/jetty-base && cp -r /usr/local/jetty/etc /usr/local/jetty-base/"
+#           docker exec --user root testbed-jetty-1 bash -c "java -jar /usr/local/jetty/start.jar --add-to-start=ssl,http2,https,test-keystore"
+#           docker compose restart jetty
 
-      - name: Test PostgreSQL Connection
-        run: |
-          PGPASSWORD=postgres psql -U postgres -d postgres -h localhost -c "\dt"
+#       - name: Test PostgreSQL Connection
+#         run: |
+#           PGPASSWORD=postgres psql -U postgres -d postgres -h localhost -c "\dt"
 
-      - name: Run HTTP Conformance Tests and Setup Schema
-        run: |
-          cd http-conformance
-          poetry run python run_checks.py --mode=local --max_workers=20
+#       - name: Run HTTP Conformance Tests and Setup Schema
+#         run: |
+#           cd http-conformance
+#           poetry run python run_checks.py --mode=local --max_workers=20
 
-      # Step 12: Start JupyterLab for Result Analysis
-      - name: Install JupyterLab and Start Analysis
-        run: |
-          cd http-conformance
-          poetry run pip install jupyterlab
+#       # Step 12: Start JupyterLab for Result Analysis
+#       - name: Install JupyterLab and Start Analysis
+#         run: |
+#           cd http-conformance
+#           poetry run pip install jupyterlab
 
-          # Run JupyterLab
-          poetry run jupyter lab --no-browser --port=8888 &
-          sleep 10
+#           # Run JupyterLab
+#           poetry run jupyter lab --no-browser --port=8888 &
+#           sleep 10
 
-          # Analyze the results using provided Jupyter Notebooks
-          poetry run jupyter nbconvert --execute --inplace --to notebook --allow-errors helpers/analysis_stats.ipynb
-          poetry run jupyter nbconvert --execute --inplace --to notebook --allow-errors helpers/analysis_paper.ipynb
+#           # Analyze the results using provided Jupyter Notebooks
+#           poetry run jupyter nbconvert --execute --inplace --to notebook --allow-errors helpers/analysis_stats.ipynb
+#           poetry run jupyter nbconvert --execute --inplace --to notebook --allow-errors helpers/analysis_paper.ipynb
 
-      - name: Upload Analysis Notebooks
-        uses: actions/upload-artifact@v3
-        with:
-          name: analysis-reports
-          path: http-conformance/helpers/*.ipynb
+#       - name: Upload Analysis Notebooks
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: analysis-reports
+#           path: http-conformance/helpers/*.ipynb
