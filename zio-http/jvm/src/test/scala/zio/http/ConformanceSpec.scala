@@ -117,7 +117,7 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.GET / "unauthorized" -> Handler.fromResponse(
               Response
                 .status(Status.Unauthorized)
-                .addHeader(Header.WWWAuthenticate("Basic realm=\"simple\", Newauth realm=\"apps\", type=1")),
+                .addHeader(Header.WWWAuthenticate.Basic(Some("simple"))),
             ),
           )
 
@@ -135,7 +135,9 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.POST / "not-allowed" -> Handler.fromResponse(
               Response
                 .status(Status.MethodNotAllowed)
-                .addHeader(Header.Allow("GET, POST, PUT")),
+                .addHeader(
+                  Header.Allow(NonEmptyChunk(Method.GET, Method.POST, Method.PUT)),
+                ),
             ),
           )
 
@@ -155,7 +157,9 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.GET / "proxy-auth" -> Handler.fromResponse(
               Response
                 .status(Status.ProxyAuthenticationRequired)
-                .addHeader(Header.ProxyAuthenticate("Basic realm=\"proxy\"")),
+                .addHeader(
+                  Header.ProxyAuthenticate(AuthenticationScheme.Basic, Some("proxy")),
+                ),
             ),
           )
 
