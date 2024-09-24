@@ -519,7 +519,7 @@ object ServerSpec extends RoutesRunnableSpec {
         assertZIO(res)(isSome(anything))
       } +
       test("should send 100 Continue before 101 Switching Protocols when both Upgrade and Expect headers are present") {
-        val upgradeRoute = Method.POST / "upgrade" -> Handler.fromZIO {
+        val upgradeRoute = Method.GET / "upgrade" -> Handler.fromZIO {
           for {
             // First, we send 100 Continue indicating readiness for the client to continue sending the body
             _        <- ZIO.succeed(Response.status(Status.Continue))
@@ -527,8 +527,8 @@ object ServerSpec extends RoutesRunnableSpec {
             response <- ZIO.succeed(
               Response
                 .status(Status.SwitchingProtocols)
-                .addHeader(Header.Connection.withValue("Upgrade"))
-                .addHeader(Header.Upgrade.withValue("https")),
+                .addHeader(Header.Connection.KeepAlive)             // Use predefined header value
+                .addHeader(Header.Upgrade.Protocol("https", "1.1")),// Use Upgrade Protocol
             )
           } yield response
         }
@@ -537,10 +537,10 @@ object ServerSpec extends RoutesRunnableSpec {
 
         // Build request with both Expect: 100-continue and Upgrade headers
         val request = Request
-          .post("/upgrade")
-          .addHeader(Header.Expect.Continue)
-          .addHeader(Header.Connection.Upgrade)
-          .addHeader(Header.Upgrade.withValue("https"))
+        val request = Request
+          .addHeader(Header.Expect.`100-continue`)            // Use predefined Expect header
+          .addHeader(Header.Connection.KeepAlive)
+          .addHeader(Header.Upgrade.Protocol("https", "1.1")) // Use predefined Upgrade header
 
         for {
           firstResponse  <- app.runZIO(request) // This should be the 100 Continue response
