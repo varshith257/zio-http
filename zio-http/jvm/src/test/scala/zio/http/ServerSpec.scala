@@ -805,23 +805,19 @@ object ServerSpec extends RoutesRunnableSpec {
         val route1xxProcess   = Method.GET / "processing" -> Handler.fromResponse(Response(status = Status.Processing))
         val route204NoContent = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
 
-        // Combining routes into a single application
         val app = Routes(route1xxContinue, route1xxSwitch, route1xxProcess, route204NoContent)
 
-        // Creating corresponding requests
         val requestContinue  = Request.get("/continue")
         val requestSwitch    = Request.get("/switching-protocols")
         val requestProcess   = Request.get("/processing")
         val requestNoContent = Request.get("/no-content")
 
         for {
-          // Executing requests
           responseContinue  <- app.runZIO(requestContinue)
           responseSwitch    <- app.runZIO(requestSwitch)
           responseProcess   <- app.runZIO(requestProcess)
           responseNoContent <- app.runZIO(requestNoContent)
 
-          // Asserting that no responses have a Content-Length header
         } yield assertTrue(
           !responseContinue.headers.contains(Header.ContentLength.name),
           !responseSwitch.headers.contains(Header.ContentLength.name),
@@ -837,6 +833,24 @@ object ServerSpec extends RoutesRunnableSpec {
         for {
           response <- app.runZIO(request)
         } yield assertTrue(!response.headers.contains(Header.ContentLength.name))
+      } +
+      test("should not send content for 304 Not Modified responses") {
+        val app = Routes(
+          Method.GET / "not-modified" -> Handler.fromResponse(
+            Response.status(Status.NotModified),
+          ),
+        )
+
+        val request = Request.get("/not-modified")
+
+        for {
+          response <- app.runZIO(request)
+        } yield assertTrue(
+          response.status == Status.NotModified,
+          response.body.isEmpty,
+          !response.headers.contains(Header.ContentLength.name),
+          !response.headers.contains(Header.TransferEncoding.name),
+        )
       }
   }
 
