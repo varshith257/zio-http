@@ -533,7 +533,7 @@ object ServerSpec extends RoutesRunnableSpec {
         val requestWithHost = Request.get("/test").addHeader(Header.Host("localhost"))
         for {
           response <- app.runZIO(requestWithHost)
-        } yield assertTrue(response.status == Status.Ok) // Expecting 200 when Host is present
+        } yield assertTrue(response.status == Status.Ok)
       } +
       test("should return 400 Bad Request if header contains CR, LF, or NULL") {
         val route = Method.GET / "test" -> Handler.ok
@@ -588,9 +588,9 @@ object ServerSpec extends RoutesRunnableSpec {
             val request = Request.get("/info")
             for {
               response <- app.runZIO(request)
-            } yield assertTrue(!response.headers.contains(Header.ContentLength.name)) // Ensure no Content-Length header
+            } yield !response.headers.contains(Header.ContentLength.name) // Return boolean result
           }
-          .map(assertTrue(_.forall(identity))) // Collect all results and assert they are true
+          .map(results => assertTrue(results.forall(identity))) // Collect all results and assert they are all true
       } +
       test("should not include Content-Length header for 204 No Content responses") {
         val route = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
