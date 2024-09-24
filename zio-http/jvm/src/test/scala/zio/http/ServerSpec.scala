@@ -696,6 +696,27 @@ object ServerSpec extends RoutesRunnableSpec {
           response <- app.runZIO(request)
         } yield assertTrue(response.status == Status.ResetContent, response.body.isEmpty)
       } +
+      test("should not generate a bare CR in headers for HTTP/1.1") {
+        val app = Routes(
+          Method.GET / "test" -> Handler.fromZIO {
+            ZIO.succeed(
+              Response
+                .status(Status.Ok)
+                .addHeader(Custom("A", "1\r\nB: 2")),
+            )
+          },
+        )
+
+        val request = Request
+          .get("/test")
+          .copy(version = Version.Http_1_1)
+
+        for {
+          response <- app.runZIO(request)
+          headersString = response.headers.toString
+          isValid       = !headersString.contains("\r") || headersString.contains("\r\n")
+        } yield assertTrue(isValid)
+      } +
       test("should return 400 Bad Request if Host header is missing") {
         val route              = Method.GET / "test" -> Handler.ok
         val app                = Routes(route)
