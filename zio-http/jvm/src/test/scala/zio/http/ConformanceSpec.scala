@@ -46,7 +46,7 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.GET / "partial" -> Handler.fromResponse(
               Response
                 .status(Status.PartialContent)
-                .addHeader(Header.ContentRange("bytes 0-14/14")),
+                .addHeader(Header.ContentRange.StartEnd("bytes", 0, 14)),
             ),
           )
 
@@ -66,7 +66,7 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.GET / "partial" -> Handler.fromResponse(
               Response
                 .status(Status.PartialContent)
-                .addHeader(Header.ContentType("multipart/byteranges; boundary=A")),
+                .addHeader(Header.ContentType(MediaType.multipartByteranges("A"))),
             ),
           )
 
@@ -85,8 +85,8 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.GET / "partial" -> Handler.fromResponse(
               Response
                 .status(Status.PartialContent)
-                .addHeader(Header.ETag("abc"))
-                .addHeader(Header.CacheControl("max-age=3600")),
+                .addHeader(Header.ETag.Strong("abc"))
+                .addHeader(Header.CacheControl.MaxAge(3600)),
             ),
             Method.GET / "full"    -> Handler.fromResponse(
               Response
