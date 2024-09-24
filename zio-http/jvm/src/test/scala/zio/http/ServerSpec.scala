@@ -577,8 +577,8 @@ object ServerSpec extends RoutesRunnableSpec {
         val decodedUrl = URL.decode("example.com:443")
 
         val request = decodedUrl match {
-          case Some(url) => Request(method = Method.CONNECT, url = url)
-          case None      => throw new RuntimeException("Failed to decode the URL")
+          case Right(url) => Request(method = Method.CONNECT, url = url)
+          case Left(_)    => throw new RuntimeException("Failed to decode the URL") // Handle URL decoding failure
         }
 
         for {
