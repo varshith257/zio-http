@@ -578,13 +578,19 @@ object ServerSpec extends RoutesRunnableSpec {
         }
       } +
       test("should not include Content-Length header for 1xx responses") {
-        val route = Method.GET / "info" -> Handler.fromResponse(Response(status = Status.Continue))
-        val app   = Routes(route)
+        val statusCodes = List(Status.Continue, Status.SwitchingProtocols, Status.Processing) // Add more if needed
 
-        val request = Request.get("/info")
-        for {
-          response <- app.runZIO(request)
-        } yield assertTrue(!response.headers.contains(Header.ContentLength.name))
+        ZIO
+          .foreach(statusCodes) { status =>
+            val route = Method.GET / "info" -> Handler.fromResponse(Response(status = status))
+            val app   = Routes(route)
+
+            val request = Request.get("/info")
+            for {
+              response <- app.runZIO(request)
+            } yield assertTrue(!response.headers.contains(Header.ContentLength.name))
+          }
+          .map(assertTrue(_))
       } +
       test("should not include Content-Length header for 204 No Content responses") {
         val route = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
