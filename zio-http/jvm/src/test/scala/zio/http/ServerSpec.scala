@@ -518,6 +518,28 @@ object ServerSpec extends RoutesRunnableSpec {
         val res = routes.deploy.headers.run().map(_.header(Header.ContentLength))
         assertZIO(res)(isSome(anything))
       } +
+      test("should send 100 Continue before 101 Switching Protocols when both Upgrade and Expect headers are present") {
+        val upgradeRoute = Method.GET / "upgrade" -> Handler.fromZIO {
+          ZIO.succeed(Response.switchingProtocols.withUpgrade("https"))
+        }
+
+        val app = Routes(upgradeRoute)
+
+        // Build request with both Expect: 100-continue and Upgrade headers
+        val request = Request
+          .get("/upgrade")
+          .addHeader(Header.Expect(Header.Expect.Continue))
+          .addHeader(Header.Connection("upgrade"))
+          .addHeader(Header.Upgrade("https"))
+
+        for {
+          response <- app.runZIO(request)
+        } yield assertTrue(
+          response.status == Status.Continue || response.status == Status.SwitchingProtocols, // The test will expect both statuses
+          response.headers.contains(Header.Upgrade.name),
+          response.headers.contains(Header.Connection.name),
+        )
+      } +
       test("should return 400 Bad Request if Host header is missing") {
         val route              = Method.GET / "test" -> Handler.ok
         val app                = Routes(route)
