@@ -112,6 +112,62 @@ object ConformanceSpec extends ZIOHttpSpec {
             responseWithoutRange.status == Status.Ok,
           )
         },
+        test("should include WWW-Authenticate header for 401 Unauthorized response(code_401_www_authenticate)") {
+          val app = Routes(
+            Method.GET / "unauthorized" -> Handler.fromResponse(
+              Response
+                .status(Status.Unauthorized)
+                .addHeader(Header.WWWAuthenticate("Basic realm=\"simple\", Newauth realm=\"apps\", type=1")),
+            ),
+          )
+
+          val request = Request.get("/unauthorized")
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.Unauthorized,
+            response.headers.contains(Header.WWWAuthenticate.name),
+          )
+        },
+        test("should include Allow header for 405 Method Not Allowed response(code_405_allow)") {
+          val app = Routes(
+            Method.POST / "not-allowed" -> Handler.fromResponse(
+              Response
+                .status(Status.MethodNotAllowed)
+                .addHeader(Header.Allow("GET, POST, PUT")),
+            ),
+          )
+
+          val request = Request.get("/not-allowed")
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.MethodNotAllowed,
+            response.headers.contains(Header.Allow.name),
+          )
+        },
+        test(
+          "should include Proxy-Authenticate header for 407 Proxy Authentication Required response(code_407_proxy_authenticate)",
+        ) {
+          val app = Routes(
+            Method.GET / "proxy-auth" -> Handler.fromResponse(
+              Response
+                .status(Status.ProxyAuthenticationRequired)
+                .addHeader(Header.ProxyAuthenticate("Basic realm=\"proxy\"")),
+            ),
+          )
+
+          val request = Request.get("/proxy-auth")
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.ProxyAuthenticationRequired,
+            response.headers.contains(Header.ProxyAuthenticate.name),
+          )
+        },
       ),
       suite("HTTP Headers")(
       ),
