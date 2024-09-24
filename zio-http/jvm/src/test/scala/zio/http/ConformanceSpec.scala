@@ -278,21 +278,21 @@ object ConformanceSpec extends ZIOHttpSpec {
           for {
             response <- app.runZIO(malformedRequest)
           } yield assertTrue(response.status == Status.BadRequest)
-        }
-          test "should return 400 Bad Request if there is whitespace between header field and colon" {
-            val route = Method.GET / "test" -> Handler.ok
-            val app   = Routes(route)
+        },
+        test("should return 400 Bad Request if there is whitespace between header field and colon") {
+          val route = Method.GET / "test" -> Handler.ok
+          val app   = Routes(route)
 
-            // Crafting a request with a whitespace between the header field name and the colon
-            // val requestWithWhitespaceHeader = Request.get("/test").addHeader("Invalid Header : value")
-            val requestWithWhitespaceHeader = Request.get("/test").addHeader(Header.Custom("Invalid Header ", "value"))
+          // Crafting a request with a whitespace between the header field name and the colon
+          // val requestWithWhitespaceHeader = Request.get("/test").addHeader("Invalid Header : value")
+          val requestWithWhitespaceHeader = Request.get("/test").addHeader(Header.Custom("Invalid Header ", "value"))
 
-            for {
-              response <- app.runZIO(requestWithWhitespaceHeader)
-            } yield {
-              assertTrue(response.status == Status.BadRequest) // Expecting a 400 Bad Request
-            }
-          },
+          for {
+            response <- app.runZIO(requestWithWhitespaceHeader)
+          } yield {
+            assertTrue(response.status == Status.BadRequest) // Expecting a 400 Bad Request
+          }
+        },
         test("should not include Content-Length header for 1xx and 204 No Content responses") {
           // Defining routes for different status codes
           val route1xxContinue = Method.GET / "continue" -> Handler.fromResponse(Response(status = Status.Continue))
