@@ -536,7 +536,7 @@ object ServerSpec extends RoutesRunnableSpec {
           Method.GET / "switch"   -> switchingProtocolsHandler,// Respond with 101 SwitchingProtocols
         )
         val initialRequest            = Request
-          .post("/upgrade")
+          .post("/upgrade", Body.empty)
           .addHeader(Header.Expect.`100-continue`)
           .addHeader(Header.Connection.KeepAlive)
           .addHeader(Header.Upgrade.Protocol("https", "1.1"))
