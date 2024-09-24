@@ -559,7 +559,7 @@ object ServerSpec extends RoutesRunnableSpec {
           Method.GET / "test"  -> Handler.fromResponse(Response.text("This is the body")),
           Method.HEAD / "test" -> Handler.fromResponse(Response(status = Status.Ok)),
         )
-        val app         = Routes(route)
+        val app         = route
         val headRequest = Request.head("/test")
         for {
           response <- app.runZIO(headRequest)
