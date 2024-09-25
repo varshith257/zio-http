@@ -411,11 +411,11 @@ object ConformanceSpec extends ZIOHttpSpec {
           "should include Retry-After header in 413 Content Too Large response if condition is temporary (code_413_retry_after)",
         ) {
           val validResponse = Response
-            .status(Status.ContentTooLarge)
+            .status(Status.RequestEntityTooLarge)
             .addHeader(Header.RetryAfter.ByDuration(10.seconds))
 
           val invalidResponse = Response
-            .status(Status.ContentTooLarge)
+            .status(Status.RequestEntityTooLarge)
             .copy(headers = Headers.empty)
 
           val app = Routes(
