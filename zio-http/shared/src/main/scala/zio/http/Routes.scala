@@ -251,8 +251,9 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
         val chunk = tree.get(req.method, req.path)
         chunk.length match {
           case 0 =>
+            val pathExists     = Method.all.exists(method => tree.get(method, req.path).nonEmpty)
             val allowedMethods = Method.all.filter(method => tree.get(method, req.path).nonEmpty)
-            if (allowedMethods.isEmpty) {
+            if (!pathExists) {
               Handler.notFound
             } else {
               Handler.succeed(
