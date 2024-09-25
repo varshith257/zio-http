@@ -5,7 +5,6 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 
-import zio.http.Header._
 import zio.http._
 
 object ConformanceSpec extends ZIOHttpSpec {
@@ -787,11 +786,11 @@ object ConformanceSpec extends ZIOHttpSpec {
         test("should use IMF-fixdate for cookie expiration date(cookie_IMF_fixdate)") {
           val validResponse = Response
             .status(Status.Ok)
-            .addHeader(Header.SetCookie(Cookie.Response("test", "test", maxAge = Some(Duration.Infinity))))
+            .addHeader(Header.SetCookie(Cookie.Response("test", "test", maxAge = Some(Duration.fromSeconds(86400)))))
 
           val invalidResponse = Response
             .status(Status.Ok)
-            .addHeader(Header.Custom("Set-Cookie", "test=test; expires=Wed, 08 Mar 23 15:14:45 GMT"))
+            .addHeader(Header.Custom("Set-Cookie", "test=test; expires=Wed, 20 Mar 25 15:14:45 GMT"))
 
           val app = Routes(
             Method.GET / "valid"   -> Handler.fromResponse(validResponse),
@@ -804,7 +803,7 @@ object ConformanceSpec extends ZIOHttpSpec {
           } yield {
             val expiresValid   = responseValid.headers.toList.exists(_.renderedValue.contains("Expires="))
             val expiresInvalid =
-              responseInvalid.headers.toList.exists(_.renderedValue.contains("expires=Wed, 08 Mar 23"))
+              responseInvalid.headers.toList.exists(_.renderedValue.contains("expires=Wed, 20 Mar 25"))
 
             assertTrue(
               expiresValid,
