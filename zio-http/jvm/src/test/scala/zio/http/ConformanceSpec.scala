@@ -728,6 +728,91 @@ object ConformanceSpec extends ZIOHttpSpec {
           )
         },
       ),
+      suite("cookies")(
+        test("should not have duplicate cookie attributes in Set-Cookie header(duplicate_cookie_attribute)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.SetCookie(Cookie.Response("test", "test", path = Some(Path.root))))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Set-Cookie", "test=test; path=/; path=/abc"))
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield {
+            val invalidCookieAttributes = responseInvalid.headers.toList.collect {
+              case h if h.headerName == "Set-Cookie" => h.renderedValue
+            }
+            assertTrue(
+              invalidCookieAttributes.exists(_.contains("path=/")) &&
+                invalidCookieAttributes.exists(_.contains("path=/abc")),
+            )
+          }
+        },
+        test("should not have duplicate cookies with the same name(duplicate_cookies)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.SetCookie(Cookie.Response("test", "test")))
+            .addHeader(Header.SetCookie(Cookie.Response("test2", "test2")))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.SetCookie(Cookie.Response("test", "test")))
+            .addHeader(Header.SetCookie(Cookie.Response("test", "test2")))
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield {
+            val duplicateCookies = responseInvalid.headers.toList.collect {
+              case h if h.headerName == "Set-Cookie" => h.renderedValue
+            }
+            assertTrue(
+              duplicateCookies.count(_.contains("test=")) == 1,
+            )
+          }
+        },
+        test("should use IMF-fixdate for cookie expiration date(cookie_IMF_fixdate)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.SetCookie(Cookie.Response("test", "test", maxAge = Some(Duration.Infinity))))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Set-Cookie", "test=test; expires=Wed, 08 Mar 23 15:14:45 GMT"))
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield {
+            val expiresValid   = responseValid.headers.toList.exists(_.renderedValue.contains("Expires="))
+            val expiresInvalid =
+              responseInvalid.headers.toList.exists(_.renderedValue.contains("expires=Wed, 08 Mar 23"))
+
+            assertTrue(
+              expiresValid,
+              expiresInvalid,
+            )
+          }
+        },
+      ),
       suite("conformance")(
         test("should not include Content-Length header for 204 No Content responses") {
           val route = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
