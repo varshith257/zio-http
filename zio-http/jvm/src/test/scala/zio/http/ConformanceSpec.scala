@@ -581,7 +581,6 @@ object ConformanceSpec extends ZIOHttpSpec {
           val route = Method.GET / "test" -> Handler.ok
           val app   = Routes(route)
 
-          // Create a malformed request with extra whitespace between start-line and first header field
           val malformedRequest =
             Request.get("/test").copy(headers = Headers.empty).withBody(Body.fromString("\r\nHost: localhost"))
 
@@ -593,18 +592,15 @@ object ConformanceSpec extends ZIOHttpSpec {
           val route = Method.GET / "test" -> Handler.ok
           val app   = Routes(route)
 
-          // Crafting a request with a whitespace between the header field name and the colon
-          // val requestWithWhitespaceHeader = Request.get("/test").addHeader("Invalid Header : value")
           val requestWithWhitespaceHeader = Request.get("/test").addHeader(Header.Custom("Invalid Header ", "value"))
 
           for {
             response <- app.runZIO(requestWithWhitespaceHeader)
           } yield {
-            assertTrue(response.status == Status.BadRequest) // Expecting a 400 Bad Request
+            assertTrue(response.status == Status.BadRequest)
           }
         },
         test("should not include Content-Length header for 1xx and 204 No Content responses") {
-          // Defining routes for different status codes
           val route1xxContinue = Method.GET / "continue" -> Handler.fromResponse(Response(status = Status.Continue))
           val route1xxSwitch   =
             Method.GET / "switching-protocols" -> Handler.fromResponse(Response(status = Status.SwitchingProtocols))
