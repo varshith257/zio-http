@@ -213,6 +213,69 @@ object ConformanceSpec extends ZIOHttpSpec {
             response.headers.contains(Header.Vary.name),
           )
         },
+        test("should include Location header in 300 MULTIPLE CHOICES response(code_300_location)") {
+          val validResponse = Response
+            .status(Status.MultipleChoices)
+            .addHeader(Header.Location("/People.html#tim"))
+
+          val invalidResponse = Response
+            .status(Status.MultipleChoices)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.MultipleChoices,
+            responseValid.headers.contains(Header.Location.name),
+            responseInvalid.status == Status.MultipleChoices,
+            !responseInvalid.headers.contains(Header.Location.name),
+          )
+        },
+        test("300 MULTIPLE CHOICES response should have body content(code_300_metadata)") {
+          val validResponse = Response
+            .status(Status.MultipleChoices)
+            .copy(body = Body.fromString("<div>ABC</div>"))
+
+          val invalidResponse = Response
+            .status(Status.MultipleChoices)
+            .copy(body = Body.empty) // No body content
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.MultipleChoices,
+            responseValid.bodyAsString.contains("ABC"),
+            responseInvalid.status == Status.MultipleChoices,
+            responseInvalid.bodyAsString.isEmpty,
+          )
+        },
+        test("should not require body content for HEAD requests(code_300_metadata)") {
+          val response = Response
+            .status(Status.MultipleChoices)
+            .copy(body = Body.empty)
+          val app      = Routes(
+            Method.HEAD / "head" -> Handler.fromResponse(response),
+          )
+
+          for {
+            headResponse <- app.runZIO(Request.head("/head"))
+          } yield assertTrue(
+            headResponse.status == Status.MultipleChoices,
+            headResponse.body.isEmpty,
+          )
+        },
       ),
       suite("HTTP Headers")(
         suite("code_400_after_bad_host_request")(
