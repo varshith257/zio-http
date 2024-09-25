@@ -683,6 +683,50 @@ object ConformanceSpec extends ZIOHttpSpec {
             responseInvalid.headers.get(Header.CacheControl.name).contains("""s-maxage="10""""),
           )
         },
+        test("Cache-Control should use quoted-string form for no-cache directive(response_directive_no_cache)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Cache-Control", """no-cache="age""""))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Cache-Control", "no-cache=age"))
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.headers.get(Header.CacheControl.name).contains("""no-cache="age""""),
+            responseInvalid.headers.get(Header.CacheControl.name).contains("no-cache=age"),
+          )
+        },
+        test("Cache-Control should use quoted-string form for private directive(response_directive_private)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Cache-Control", """private="x-frame-options""""))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Cache-Control", "private=x-frame-options"))
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.headers.get(Header.CacheControl.name).contains("""private="x-frame-options""""),
+            responseInvalid.headers.get(Header.CacheControl.name).contains("private=x-frame-options"),
+          )
+        },
       ),
       suite("conformance")(
         test("should not include Content-Length header for 204 No Content responses") {
