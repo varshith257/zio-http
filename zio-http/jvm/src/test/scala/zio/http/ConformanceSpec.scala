@@ -775,11 +775,17 @@ object ConformanceSpec extends ZIOHttpSpec {
             responseValid   <- app.runZIO(Request.get("/valid"))
             responseInvalid <- app.runZIO(Request.get("/invalid"))
           } yield {
-            val duplicateCookies = responseInvalid.headers.toList.collect {
+            val validCookies   = responseValid.headers.toList.collect {
+              case h if h.headerName == Header.SetCookie.name => h.renderedValue
+            }
+            val invalidCookies = responseInvalid.headers.toList.collect {
               case h if h.headerName == Header.SetCookie.name => h.renderedValue
             }
             assertTrue(
-              duplicateCookies.count(_.contains("test=")) == 1,
+              validCookies.count(_.contains("test=")) == 1,
+            ) &&
+            assertTrue(
+              invalidCookies.count(_.contains("test=")) == 2,
             )
           }
         },
