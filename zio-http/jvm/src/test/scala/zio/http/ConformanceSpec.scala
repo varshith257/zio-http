@@ -407,6 +407,85 @@ object ConformanceSpec extends ZIOHttpSpec {
             !responseInvalid.headers.contains(Header.Location.name),
           )
         },
+        test(
+          "should include Retry-After header in 413 Content Too Large response if condition is temporary (code_413_retry_after)",
+        ) {
+          val validResponse = Response
+            .status(Status.ContentTooLarge)
+            .addHeader(Header.RetryAfter.ByDuration(10.seconds))
+
+          val invalidResponse = Response
+            .status(Status.ContentTooLarge)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.ContentTooLarge,
+            responseValid.headers.contains(Header.RetryAfter.name),
+            responseInvalid.status == Status.ContentTooLarge,
+            !responseInvalid.headers.contains(Header.RetryAfter.name),
+          )
+        },
+        test(
+          "should include Accept or Accept-Encoding header in 415 Unsupported Media Type response (code_415_unsupported_media_type)",
+        ) {
+          val validResponse = Response
+            .status(Status.UnsupportedMediaType)
+            .addHeader(Header.Accept(MediaType.application.json))
+
+          val invalidResponse = Response
+            .status(Status.UnsupportedMediaType)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.UnsupportedMediaType,
+            responseValid.headers.contains(Header.Accept.name) ||
+              responseValid.headers.contains(Header.AcceptEncoding.name),
+            responseInvalid.status == Status.UnsupportedMediaType,
+            !responseInvalid.headers.contains(Header.Accept.name) &&
+              !responseInvalid.headers.contains(Header.AcceptEncoding.name),
+          )
+        },
+        test("should include Content-Range header in 416 Range Not Satisfiable response (code_416_content_range)") {
+          val validResponse = Response
+            .status(Status.RequestedRangeNotSatisfiable)
+            .addHeader(Header.ContentRange.RangeTotal("bytes", 47022))
+
+          val invalidResponse = Response
+            .status(Status.RequestedRangeNotSatisfiable)
+            .addHeader(Header.Custom("Content-Range", ",;"))
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.RequestedRangeNotSatisfiable,
+            responseValid.headers.contains(Header.ContentRange.name),
+            responseInvalid.status == Status.RequestedRangeNotSatisfiable,
+            responseInvalid.headers.contains(Header.ContentRange.name),
+            responseInvalid.headers.get(Header.ContentRange.name).contains(",;"),
+          )
+        },
       ),
       suite("HTTP Headers")(
         suite("code_400_after_bad_host_request")(
