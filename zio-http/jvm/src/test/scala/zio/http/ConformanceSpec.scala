@@ -631,9 +631,7 @@ object ConformanceSpec extends ZIOHttpSpec {
           for {
             response <- app.runZIO(Request.get("/test"))
           } yield assertTrue(
-            response.headers.count(
-              _._1 == Header.XFrameOptions.name,
-            ) == 1,
+            response.headers.values(Header.XFrameOptions.name).length == 1,
           )
         },
       ),
@@ -641,11 +639,11 @@ object ConformanceSpec extends ZIOHttpSpec {
         test("Cache-Control should not have quoted string for max-age directive(response_directive_max_age)") {
           val validResponse = Response
             .status(Status.Ok)
-            .addHeader(Header.CacheControl.MaxAge(5)) 
+            .addHeader(Header.CacheControl.MaxAge(5))
 
           val invalidResponse = Response
             .status(Status.Ok)
-            .addHeader(Header.Custom("Cache-Control", """max-age="5"""")) 
+            .addHeader(Header.Custom("Cache-Control", """max-age="5""""))
 
           val app = Routes(
             Method.GET / "valid"   -> Handler.fromResponse(validResponse),
