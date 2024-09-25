@@ -7,7 +7,6 @@ import zio.test._
 
 import zio.http._
 import zio.http.Header._
-import zio.http.Status._
 
 object ConformanceSpec extends ZIOHttpSpec {
 
@@ -137,7 +136,7 @@ object ConformanceSpec extends ZIOHttpSpec {
           val app            = Routes(
             Method.POST / "not-allowed" -> Handler.fromResponse(
               Response
-                .status(Status.OK),
+                .status(Status.Ok),
             ),
           )
 
