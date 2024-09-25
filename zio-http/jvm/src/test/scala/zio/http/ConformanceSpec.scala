@@ -214,11 +214,11 @@ object ConformanceSpec extends ZIOHttpSpec {
           )
         },
         test("should include Location header in 300 MULTIPLE CHOICES response(code_300_location)") {
-          val validPath = Path("/People.html#tim")
+          val validUrl = URL.decode("/People.html#tim").toOption.getOrElse(URL.root)
 
           val validResponse = Response
             .status(Status.MultipleChoices)
-            .addHeader(Header.Location(validPath))
+            .addHeader(Header.Location(validUrl))
 
           val invalidResponse = Response
             .status(Status.MultipleChoices)
