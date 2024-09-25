@@ -170,6 +170,50 @@ object ConformanceSpec extends ZIOHttpSpec {
             response.headers.contains(Header.ProxyAuthenticate.name),
           )
         },
+        test("should return 304 without content(code_304_no_content)") {
+          val app = Routes(
+            Method.GET / "no-content" -> Handler.fromResponse(
+              Response
+                .status(Status.NotModified)
+                .setBody(""),
+            ),
+          )
+
+          val request = Request.get("/no-content")
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.NotModified,
+            response.body.isEmpty,
+          )
+        },
+        test("should return 304 with correct headers(code_304_headers)") {
+          val headers = Headers(
+            Header.ETag.Strong("abc"),
+            Header.CacheControl.MaxAge(3600),
+            Header.Vary("Accept-Encoding"),
+          )
+
+          val app = Routes(
+            Method.GET / "with-headers" -> Handler.fromResponse(
+              Response
+                .status(Status.NotModified)
+                .addHeaders(headers),
+            ),
+          )
+
+          val request = Request.get("/with-headers")
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.NotModified,
+            response.headers.contains(Header.ETag.name),
+            response.headers.contains(Header.CacheControl.name),
+            response.headers.contains(Header.Vary.name),
+          )
+        },
       ),
       suite("HTTP Headers")(
       ),
