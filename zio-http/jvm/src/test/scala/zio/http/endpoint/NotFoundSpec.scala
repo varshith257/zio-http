@@ -87,7 +87,7 @@ object NotFoundSpec extends ZIOHttpSpec {
       result = response.status == Status.NotFound
     } yield assertTrue(result)
   }
-  
+
   def test405[R](service: Routes[R, Nothing])(
     url: String,
     method: Method,
