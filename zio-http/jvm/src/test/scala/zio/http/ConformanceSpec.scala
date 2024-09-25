@@ -216,6 +216,82 @@ object ConformanceSpec extends ZIOHttpSpec {
         },
       ),
       suite("HTTP Headers")(
+        suite("code_400_after_bad_host_request")(
+          test("should return 400 Bad Request if Host header is missing") {
+            val route              = Method.GET / "test" -> Handler.ok
+            val app                = Routes(route)
+            val requestWithoutHost = Request.get("/test")
+
+            for {
+              response <- app.runZIO(requestWithoutHost)
+            } yield assertTrue(response.status == Status.BadRequest)
+          },
+          test("should return 400 Bad Request if there are multiple Host headers") {
+            val route               = Method.GET / "test" -> Handler.ok
+            val app                 = Routes(route)
+            val requestWithTwoHosts = Request
+              .get("/test")
+              .addHeader(Header.Host("example.com"))
+              .addHeader(Header.Host("another.com"))
+
+            for {
+              response <- app.runZIO(requestWithTwoHosts)
+            } yield assertTrue(response.status == Status.BadRequest)
+          },
+          test("should return 400 Bad Request if Host header is invalid") {
+            val route                  = Method.GET / "test" -> Handler.ok
+            val app                    = Routes(route)
+            val requestWithInvalidHost = Request
+              .get("/test")
+              .addHeader(Header.Host("invalid_host"))
+
+            for {
+              response <- app.runZIO(requestWithInvalidHost)
+            } yield assertTrue(response.status == Status.BadRequest)
+          },
+        ),
+        test("should not include Content-Length header for 2XX CONNECT responses(content_length_2XX_connect)") {
+          val app = Routes(
+            Method.CONNECT / "" -> Handler.fromResponse(
+              Response.status(Status.Ok),
+            ),
+          )
+
+          val decodedUrl = URL.decode("https://example.com:443")
+
+          val request = decodedUrl match {
+            case Right(url) => Request(method = Method.CONNECT, url = url)
+            case Left(_)    => throw new RuntimeException("Failed to decode the URL")
+          }
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.Ok,
+            !response.headers.contains(Header.ContentLength.name),
+          )
+        },
+        test("should not include Transfer-Encoding header for 2XX CONNECT responses(transfer_encoding_2XX_connect)") {
+          val app = Routes(
+            Method.CONNECT / "" -> Handler.fromResponse(
+              Response.status(Status.Ok),
+            ),
+          )
+
+          val decodedUrl = URL.decode("https://example.com:443")
+
+          val request = decodedUrl match {
+            case Right(url) => Request(method = Method.CONNECT, url = url)
+            case Left(_)    => throw new RuntimeException("Failed to decode the URL")
+          }
+
+          for {
+            response <- app.runZIO(request)
+          } yield assertTrue(
+            response.status == Status.Ok,
+            !response.headers.contains(Header.TransferEncoding.name),
+          )
+        },
       ),
       suite("conformance")(
         test(
@@ -268,48 +344,6 @@ object ConformanceSpec extends ZIOHttpSpec {
           } yield assertTrue(
             response.status == Status.Ok, // Ensure we get a 200 OK status
             response.body.isEmpty,        // Ensure no body is sent for HEAD request
-          )
-        },
-        test("should not include Content-Length header for 2XX CONNECT responses") {
-          val app = Routes(
-            Method.CONNECT / "" -> Handler.fromResponse(
-              Response.status(Status.Ok),
-            ),
-          )
-
-          val decodedUrl = URL.decode("https://example.com:443")
-
-          val request = decodedUrl match {
-            case Right(url) => Request(method = Method.CONNECT, url = url)
-            case Left(_)    => throw new RuntimeException("Failed to decode the URL")
-          }
-
-          for {
-            response <- app.runZIO(request)
-          } yield assertTrue(
-            response.status == Status.Ok,
-            !response.headers.contains(Header.ContentLength.name),
-          )
-        },
-        test("should not include Transfer-Encoding header for 2XX CONNECT responses") {
-          val app = Routes(
-            Method.CONNECT / "" -> Handler.fromResponse(
-              Response.status(Status.Ok),
-            ),
-          )
-
-          val decodedUrl = URL.decode("https://example.com:443")
-
-          val request = decodedUrl match {
-            case Right(url) => Request(method = Method.CONNECT, url = url)
-            case Left(_)    => throw new RuntimeException("Failed to decode the URL")
-          }
-
-          for {
-            response <- app.runZIO(request)
-          } yield assertTrue(
-            response.status == Status.Ok,
-            !response.headers.contains(Header.TransferEncoding.name),
           )
         },
         test("should send Upgrade header with 426 Upgrade Required response") {
@@ -410,15 +444,6 @@ object ConformanceSpec extends ZIOHttpSpec {
             headersString = response.headers.toString
             isValid       = !headersString.contains("\r") || headersString.contains("\r\n")
           } yield assertTrue(isValid)
-        },
-        test("should return 400 Bad Request if Host header is missing") {
-          val route              = Method.GET / "test" -> Handler.ok
-          val app                = Routes(route)
-          val requestWithoutHost = Request.get("/test")
-
-          for {
-            response <- app.runZIO(requestWithoutHost)
-          } yield assertTrue(response.status == Status.BadRequest)
         },
         test("should return 200 OK if Host header is present") {
           val route           = Method.GET / "test" -> Handler.ok
