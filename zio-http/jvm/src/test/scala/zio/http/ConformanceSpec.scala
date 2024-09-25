@@ -427,9 +427,9 @@ object ConformanceSpec extends ZIOHttpSpec {
             responseValid   <- app.runZIO(Request.get("/valid"))
             responseInvalid <- app.runZIO(Request.get("/invalid"))
           } yield assertTrue(
-            responseValid.status == Status.ContentTooLarge,
+            responseValid.status == Status.RequestEntityTooLarge,
             responseValid.headers.contains(Header.RetryAfter.name),
-            responseInvalid.status == Status.ContentTooLarge,
+            responseInvalid.status == Status.RequestEntityTooLarge,
             !responseInvalid.headers.contains(Header.RetryAfter.name),
           )
         },
