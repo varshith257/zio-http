@@ -681,6 +681,56 @@ object ConformanceSpec extends ZIOHttpSpec {
             res.status == Status.Ok,
           )
         },
+        test("should send the same headers for HEAD and GET requests (head_get_headers)") {
+          val getResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.ContentType(MediaType.text.html))
+            .addHeader(Header.Custom("X-Custom-Header", "value"))
+            .copy(body = Body.fromString("<div>ABC</div>"))
+
+          val app = Routes(
+            Method.GET / "test"  -> Handler.fromResponse(getResponse),
+            Method.HEAD / "test" -> Handler.fromResponse(getResponse.copy(body = Body.empty)),
+          )
+
+          for {
+            getResponse  <- app.runZIO(Request.get("/test"))
+            headResponse <- app.runZIO(Request.head("/test"))
+            getHeaders  = getResponse.headers.toList.map(_.headerName).toSet
+            headHeaders = headResponse.headers.toList.map(_.headerName).toSet
+          } yield assertTrue(
+            getHeaders == headHeaders,
+          )
+        },
+        test("should reply with 501 for unknown HTTP methods (code_501_unknown_methods)") {
+          val app = Routes(
+            Method.GET / "test" -> Handler.fromResponse(Response.status(Status.Ok)),
+          )
+
+          val unknownMethodRequest = Request.custom(method = Method.Custom("ABC"), url = URL(Path.root / "test"))
+
+          for {
+            response <- app.runZIO(unknownMethodRequest)
+          } yield assertTrue(
+            response.status == Status.NotImplemented,
+          )
+        },
+        test(
+          "should reply with 405 when the request method is not allowed for the target resource (code_405_blocked_methods)",
+        ) {
+          val app = Routes(
+            Method.GET / "test" -> Handler.fromResponse(Response.status(Status.Ok)),
+          )
+
+          // Testing a disallowed method (e.g., CONNECT)
+          val connectMethodRequest = Request.custom(method = Method.CONNECT, url = URL(Path.root / "test"))
+
+          for {
+            response <- app.runZIO(connectMethodRequest)
+          } yield assertTrue(
+            response.status == Status.MethodNotAllowed,
+          )
+        },
       ),
       suite("HTTP/1.1")(
         test("should return 400 Bad Request if there is whitespace between start-line and first header field") {
