@@ -707,7 +707,7 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.GET / "test" -> Handler.fromResponse(Response.status(Status.Ok)),
           )
 
-          val unknownMethodRequest = Request.custom(method = Method.Custom("ABC"), url = URL(Path.root / "test"))
+          val unknownMethodRequest = Request(method = Method.CUSTOM("ABC"), url = URL(Path.root / "test"))
 
           for {
             response <- app.runZIO(unknownMethodRequest)
@@ -723,7 +723,7 @@ object ConformanceSpec extends ZIOHttpSpec {
           )
 
           // Testing a disallowed method (e.g., CONNECT)
-          val connectMethodRequest = Request.custom(method = Method.CONNECT, url = URL(Path.root / "test"))
+          val connectMethodRequest = Request(method = Method.CONNECT, url = URL(Path.root / "test"))
 
           for {
             response <- app.runZIO(connectMethodRequest)
