@@ -8,6 +8,7 @@ import zio.test._
 import zio.http._
 
 object ConformanceSpec extends ZIOHttpSpec {
+  val validUrl = URL.decode("http://example.com").toOption.getOrElse(URL.root)
 
   override def spec =
     suite("ConformanceSpec")(
@@ -214,11 +215,11 @@ object ConformanceSpec extends ZIOHttpSpec {
           )
         },
         test("should include Location header in 300 MULTIPLE CHOICES response(code_300_location)") {
-          val validUrl = URL.decode("/People.html#tim").toOption.getOrElse(URL.root)
+          val testUrl = URL.decode("/People.html#tim").toOption.getOrElse(URL.root)
 
           val validResponse = Response
             .status(Status.MultipleChoices)
-            .addHeader(Header.Location(validUrl))
+            .addHeader(Header.Location(testUrl))
 
           val invalidResponse = Response
             .status(Status.MultipleChoices)
@@ -279,6 +280,131 @@ object ConformanceSpec extends ZIOHttpSpec {
           } yield assertTrue(
             headResponse.status == Status.MultipleChoices,
             headResponse.body.isEmpty,
+          )
+        },
+        test("should include Location header in 301 MOVED PERMANENTLY response(code_301_location)") {
+
+          val validResponse = Response
+            .status(Status.MovedPermanently)
+            .addHeader(Header.Location(validUrl))
+
+          val invalidResponse = Response
+            .status(Status.MovedPermanently)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.MovedPermanently,
+            responseValid.headers.contains(Header.Location.name),
+            responseInvalid.status == Status.MovedPermanently,
+            !responseInvalid.headers.contains(Header.Location.name),
+          )
+        },
+        test("should include Location header in 302 FOUND response(code_302_location)") {
+
+          val validResponse = Response
+            .status(Status.Found)
+            .addHeader(Header.Location(validUrl))
+
+          val invalidResponse = Response
+            .status(Status.Found)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.Found,
+            responseValid.headers.contains(Header.Location.name),
+            responseInvalid.status == Status.Found,
+            !responseInvalid.headers.contains(Header.Location.name),
+          )
+        },
+        test("should include Location header in 303 SEE OTHER response(code_303_location)") {
+
+          val validResponse = Response
+            .status(Status.SeeOther)
+            .addHeader(Header.Location(validUrl))
+
+          val invalidResponse = Response
+            .status(Status.SeeOther)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.SeeOther,
+            responseValid.headers.contains(Header.Location.name),
+            responseInvalid.status == Status.SeeOther,
+            !responseInvalid.headers.contains(Header.Location.name),
+          )
+        },
+        test("should include Location header in 307 TEMPORARY REDIRECT response(code_307_location)") {
+
+          val validResponse = Response
+            .status(Status.TemporaryRedirect)
+            .addHeader(Header.Location(validUrl))
+
+          val invalidResponse = Response
+            .status(Status.TemporaryRedirect)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.TemporaryRedirect,
+            responseValid.headers.contains(Header.Location.name),
+            responseInvalid.status == Status.TemporaryRedirect,
+            !responseInvalid.headers.contains(Header.Location.name),
+          )
+        },
+        test("should include Location header in 308 PERMANENT REDIRECT response(code_308_location)") {
+
+          val validResponse = Response
+            .status(Status.PermanentRedirect)
+            .addHeader(Header.Location(validUrl))
+
+          val invalidResponse = Response
+            .status(Status.PermanentRedirect)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.status == Status.PermanentRedirect,
+            responseValid.headers.contains(Header.Location.name),
+            responseInvalid.status == Status.PermanentRedirect,
+            !responseInvalid.headers.contains(Header.Location.name),
           )
         },
       ),
