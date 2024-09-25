@@ -631,8 +631,7 @@ object ConformanceSpec extends ZIOHttpSpec {
           for {
             response <- app.runZIO(Request.get("/test"))
           } yield {
-            val headersList          = response.headers.toList
-            val xFrameOptionsHeaders = headersList.filter(_._1 == Header.XFrameOptions.name)
+            val xFrameOptionsHeaders = response.headers.toList.filter(_.name == Header.XFrameOptions.name)
             assertTrue(xFrameOptionsHeaders.length == 1)
           }
         },
