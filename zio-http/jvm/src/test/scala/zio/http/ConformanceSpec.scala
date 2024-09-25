@@ -155,7 +155,7 @@ object ConformanceSpec extends ZIOHttpSpec {
               Response
                 .status(Status.ProxyAuthenticationRequired)
                 .addHeader(
-                  Header.ProxyAuthenticate(AuthenticationScheme.Basic, Some("proxy")),
+                  Header.ProxyAuthenticate(Header.AuthenticationScheme.Basic, Some("proxy")),
                 ),
             ),
           )
