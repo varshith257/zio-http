@@ -253,11 +253,9 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
           case 0 =>
             val allowedMethods = Method.all.filter(method => tree.get(method, req.path).nonEmpty)
             if (allowedMethods.nonEmpty) {
-              Handler.response(
-                Response
-                  .status(Status.MethodNotAllowed)
-                  .addHeader(Header.Allow(NonEmptyChunk.fromIterable(allowedMethods))),
-              )
+              Response
+                .status(Status.MethodNotAllowed)
+                .addHeader(Header.Allow(NonEmptyChunk.fromIterable(allowedMethods.head, allowedMethods.tail)))
             } else {
               Handler.notFound
             }
