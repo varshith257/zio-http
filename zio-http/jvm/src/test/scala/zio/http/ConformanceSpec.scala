@@ -292,181 +292,129 @@ object ConformanceSpec extends ZIOHttpSpec {
             !response.headers.contains(Header.TransferEncoding.name),
           )
         },
-        suite("sts")(
-          // TODO: Strict-Transport-Security Header to be Added
-          // suite("sts_directives_only_allowed_once")(
-          //   test("should return valid if each directive appears only once in STS header") {
-          //     val app = Routes(
-          //       Method.GET / "secure" -> Handler.fromResponse(
-          //         Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000; includeSubDomains")),
-          //       ),
-          //     )
+      ),
+      suite("sts")(
+        // TODO: Strict-Transport-Security Header to be Added in Header.Scala
 
-          //     // val request = Request.get("/secure").withSecure(true)
-          //     val request = Request.get(URL.decode("https://localhost/secure").toOption.get)
+      ),
+      suite("Transfer-Encoding")(
+        suite("no_transfer_encoding_1xx_204")(
+          test("should return valid when Transfer-Encoding is not present for 1xx or 204 status") {
+            val app = Routes(
+              Method.GET / "no-content" -> Handler.fromResponse(
+                Response.status(Status.NoContent),
+              ),
+              Method.GET / "continue"   -> Handler.fromResponse(
+                Response.status(Status.Continue),
+              ),
+            )
+            for {
+              responseNoContent <- app.runZIO(Request.get("/no-content"))
+              responseContinue  <- app.runZIO(Request.get("/continue"))
+            } yield assertTrue(responseNoContent.status == Status.NoContent) &&
+              assertTrue(!responseNoContent.headers.contains(Header.TransferEncoding.name)) &&
+              assertTrue(responseContinue.status == Status.Continue) &&
+              assertTrue(!responseContinue.headers.contains(Header.TransferEncoding.name))
+          },
+          test("should return invalid when Transfer-Encoding is present for 1xx or 204 status") {
+            val app = Routes(
+              Method.GET / "no-content" -> Handler.fromResponse(
+                Response.status(Status.NoContent).addHeader(Header.TransferEncoding.Chunked),
+              ),
+              Method.GET / "continue"   -> Handler.fromResponse(
+                Response.status(Status.Continue).addHeader(Header.TransferEncoding.Chunked),
+              ),
+            )
 
-          //     for {
-          //       response <- app.runZIO(request)
-          //     } yield assertTrue(response.status == Status.Ok) &&
-          //       assertTrue(response.headers.contains(Header.StrictTransportSecurity.name))
-          //   },
-          //   test("should return invalid if STS header contains duplicate directives") {
-          //     val app     = Routes(
-          //       Method.GET / "secure" -> Handler.fromResponse(
-          //         Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000; max-age=31536000")),
-          //       ),
-          //     )
-          //     val request = Request.get(URL.decode("http://localhost/non-secure").toOption.get)
-
-          //     // val decodedUrl = URL.decode("https://example.com:443")
-
-          //     for {
-          //       response <- app.runZIO(request)
-          //     } yield assertTrue(response.status == Status.Ok) &&
-          //       assertTrue(response.headers.contains(Header.StrictTransportSecurity.name))
-          //   },
-          // ),
-          // suite("only_one_sts_header_allowed")(
-          //   test("should return valid if only one STS header is present") {
-          //     val app = Routes(
-          //       Method.GET / "secure" -> Handler.fromResponse(
-          //         Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000")),
-          //       ),
-          //     )
-
-          //     val request = Request.get(URL.decode("https://localhost/secure").toOption.get)
-
-          //     for {
-          //       response <- app.runZIO(request)
-          //     } yield assertTrue(response.status == Status.Ok) &&
-          //       assertTrue(response.headers.count(Header.StrictTransportSecurity.name) == 1)
-          //   },
-          //   test("should return invalid if more than one STS header is present") {
-          //     val app = Routes(
-          //       Method.GET / "secure" -> Handler.fromResponse(
-          //         Response.ok
-          //           .addHeader(Header.StrictTransportSecurity("max-age=31536000"))
-          //           .addHeader(Header.StrictTransportSecurity("max-age=31536000")),
-          //       ),
-          //     )
-
-          //     val request = Request.get(URL.decode("https://localhost/secure").toOption.get)
-          //     // val request = Request.get("/secure").withSecure(true)
-
-          //     for {
-          //       response <- app.runZIO(request)
-          //     } yield assertTrue(response.status == Status.Ok) &&
-          //       assertTrue(response.headers.count(Header.StrictTransportSecurity.name) > 1)
-          //   },
-          // ),
-          // suite("sts_header_http")(
-          //   test("should not include STS header in HTTP response") {
-          //     val app = Routes(
-          //       Method.GET / "non-secure" -> Handler.fromResponse(
-          //         Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000")),
-          //       ),
-          //     )
-
-          //     // val request = Request.get("/non-secure").withSecure(false)
-          //     val request = Request.get(URL.decode("http://localhost/non-secure").toOption.get)
-
-          //     for {
-          //       response <- app.runZIO(request)
-          //     } yield assertTrue(response.status == Status.Ok) &&
-          //       assertTrue(!response.headers.contains(Header.StrictTransportSecurity.name))
-          //   },
-          //   test("should include STS header in HTTPS response") {
-          //     val app = Routes(
-          //       Method.GET / "secure" -> Handler.fromResponse(
-          //         Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000")),
-          //       ),
-          //     )
-
-          //     val request = Request.get(URL.decode("https://localhost/secure").toOption.get)
-          //     // val request = Request.get("/secure").withSecure(true)
-
-          //     for {
-          //       response <- app.runZIO(request)
-          //     } yield assertTrue(response.status == Status.Ok) &&
-          //       assertTrue(response.headers.contains(Header.StrictTransportSecurity.name))
-          //   },
-          // ),
-          // suite("sts-maxage")(
-          // ),
-          suite("Transfer-Encoding")(
-            suite("no_transfer_encoding_1xx_204")(
-              test("should return valid when Transfer-Encoding is not present for 1xx or 204 status") {
-                val app = Routes(
-                  Method.GET / "no-content" -> Handler.fromResponse(
-                    Response.status(Status.NoContent),
-                  ),
-                  Method.GET / "continue"   -> Handler.fromResponse(
-                    Response.status(Status.Continue),
-                  ),
-                )
-                for {
-                  responseNoContent <- app.runZIO(Request.get("/no-content"))
-                  responseContinue  <- app.runZIO(Request.get("/continue"))
-                } yield assertTrue(responseNoContent.status == Status.NoContent) &&
-                  assertTrue(!responseNoContent.headers.contains(Header.TransferEncoding.name)) &&
-                  assertTrue(responseContinue.status == Status.Continue) &&
-                  assertTrue(!responseContinue.headers.contains(Header.TransferEncoding.name))
-              },
-              test("should return invalid when Transfer-Encoding is present for 1xx or 204 status") {
-                val app = Routes(
-                  Method.GET / "no-content" -> Handler.fromResponse(
-                    Response.status(Status.NoContent).addHeader(Header.TransferEncoding.Chunked),
-                  ),
-                  Method.GET / "continue"   -> Handler.fromResponse(
-                    Response.status(Status.Continue).addHeader(Header.TransferEncoding.Chunked),
-                  ),
-                )
-
-                for {
-                  responseNoContent <- app.runZIO(Request.get("/no-content"))
-                  responseContinue  <- app.runZIO(Request.get("/continue"))
-                } yield assertTrue(responseNoContent.status == Status.NoContent) &&
-                  assertTrue(responseNoContent.headers.contains(Header.TransferEncoding.name)) &&
-                  assertTrue(responseContinue.status == Status.Continue) &&
-                  assertTrue(responseContinue.headers.contains(Header.TransferEncoding.name))
-              },
-            ),
-            suite("transfer_encoding_http11")(
-              test("should not send Transfer-Encoding in response if request HTTP version is below 1.1") {
-                val app = Routes(
-                  Method.GET / "test" -> Handler.fromResponse(
-                    Response.ok.addHeader(Header.TransferEncoding.Chunked),
-                  ),
-                )
-
-                val request = Request.get("/test").copy(version = Version.`HTTP/1.0`)
-
-                for {
-                  response <- app.runZIO(request)
-                } yield assertTrue(
-                  response.status == Status.Ok,
-                  !response.headers.contains(Header.TransferEncoding.name),
-                )
-              },
-              test("should send Transfer-Encoding in response if request HTTP version is 1.1 or higher") {
-                val app = Routes(
-                  Method.GET / "test" -> Handler.fromResponse(
-                    Response.ok.addHeader(Header.TransferEncoding.Chunked),
-                  ),
-                )
-
-                val request = Request.get("/test").copy(version = Version.`HTTP/1.1`)
-
-                for {
-                  response <- app.runZIO(request)
-                } yield assertTrue(
-                  response.status == Status.Ok,
-                  response.headers.contains(Header.TransferEncoding.name),
-                )
-              },
-            ),
-          ),
+            for {
+              responseNoContent <- app.runZIO(Request.get("/no-content"))
+              responseContinue  <- app.runZIO(Request.get("/continue"))
+            } yield assertTrue(responseNoContent.status == Status.NoContent) &&
+              assertTrue(responseNoContent.headers.contains(Header.TransferEncoding.name)) &&
+              assertTrue(responseContinue.status == Status.Continue) &&
+              assertTrue(responseContinue.headers.contains(Header.TransferEncoding.name))
+          },
         ),
+        suite("transfer_encoding_http11")(
+          test("should not send Transfer-Encoding in response if request HTTP version is below 1.1") {
+            val app = Routes(
+              Method.GET / "test" -> Handler.fromResponse(
+                Response.ok.addHeader(Header.TransferEncoding.Chunked),
+              ),
+            )
+
+            val request = Request.get("/test").copy(version = Version.`HTTP/1.0`)
+
+            for {
+              response <- app.runZIO(request)
+            } yield assertTrue(
+              response.status == Status.Ok,
+              !response.headers.contains(Header.TransferEncoding.name),
+            )
+          },
+          test("should send Transfer-Encoding in response if request HTTP version is 1.1 or higher") {
+            val app = Routes(
+              Method.GET / "test" -> Handler.fromResponse(
+                Response.ok.addHeader(Header.TransferEncoding.Chunked),
+              ),
+            )
+
+            val request = Request.get("/test").copy(version = Version.`HTTP/1.1`)
+
+            for {
+              response <- app.runZIO(request)
+            } yield assertTrue(
+              response.status == Status.Ok,
+              response.headers.contains(Header.TransferEncoding.name),
+            )
+          },
+        ),
+      ),
+      suite("HTTP-Methods")(
+        test("should not send body for HEAD requests(content_head_request)") {
+          val route       = Routes(
+            Method.GET / "test"  -> Handler.fromResponse(Response.text("This is the body")),
+            Method.HEAD / "test" -> Handler.fromResponse(Response(status = Status.Ok)),
+          )
+          val app         = route
+          val headRequest = Request.head("/test")
+          for {
+            response <- app.runZIO(headRequest)
+          } yield assertTrue(
+            response.status == Status.Ok,
+            response.body.isEmpty,
+          )
+        },
+        test("should not return 206, 304, or 416 status codes for POST requests(post_invalid_response_codes)") {
+          val invalidStatusCodes = List(Status.PartialContent, Status.NotModified, Status.RequestedRangeNotSatisfiable)
+
+          val app = Routes(
+            Method.POST / "test"   -> Handler.fromResponse(
+              Response.status(Status.PartialContent),
+            ),
+            Method.POST / "test-2" -> Handler.fromResponse(
+              Response.status(Status.NotModified),
+            ),
+            Method.POST / "test-3" -> Handler.fromResponse(
+              Response.status(Status.RequestedRangeNotSatisfiable),
+            ),
+            Method.POST / "valid"  -> Handler.fromResponse(
+              Response.status(Status.Ok),
+            ),
+          )
+
+          for {
+            response1     <- app.runZIO(Request.post("/test", Body.empty))
+            response2     <- app.runZIO(Request.post("/test-2", Body.empty))
+            response3     <- app.runZIO(Request.post("/test-3", Body.empty))
+            validResponse <- app.runZIO(Request.post("/valid", Body.empty))
+          } yield assertTrue(
+            response1.status != Status.PartialContent,
+            response2.status != Status.NotModified,
+            response3.status != Status.RequestedRangeNotSatisfiable,
+            validResponse.status == Status.Ok,
+          )
+        },
       ),
       suite("conformance")(
         test(
@@ -501,24 +449,10 @@ object ConformanceSpec extends ZIOHttpSpec {
             secondResponse <- app.runZIO(followUpRequest)
 
           } yield assertTrue(
-            firstResponse.status == Status.Continue,            // Checks first response is 100 Continue
-            secondResponse.status == Status.SwitchingProtocols, // Checks second response is 101 Switching Protocols
+            firstResponse.status == Status.Continue,
+            secondResponse.status == Status.SwitchingProtocols,
             secondResponse.headers.contains(Header.Upgrade.name),
             secondResponse.headers.contains(Header.Connection.name),
-          )
-        },
-        test("should not send body for HEAD requests") {
-          val route       = Routes(
-            Method.GET / "test"  -> Handler.fromResponse(Response.text("This is the body")),
-            Method.HEAD / "test" -> Handler.fromResponse(Response(status = Status.Ok)),
-          )
-          val app         = route
-          val headRequest = Request.head("/test")
-          for {
-            response <- app.runZIO(headRequest)
-          } yield assertTrue(
-            response.status == Status.Ok, // Ensure we get a 200 OK status
-            response.body.isEmpty,        // Ensure no body is sent for HEAD request
           )
         },
         test("should send Upgrade header with 426 Upgrade Required response") {
@@ -632,7 +566,6 @@ object ConformanceSpec extends ZIOHttpSpec {
           val route = Method.GET / "test" -> Handler.ok
           val app   = Routes(route)
 
-          // Crafting a request with invalid headers containing CR, LF, and NULL
           val requestWithCRLFHeader = Request.get("/test").addHeader("InvalidHeader", "Value\r\n")
           val requestWithNullHeader = Request.get("/test").addHeader("InvalidHeader", "Value\u0000")
 

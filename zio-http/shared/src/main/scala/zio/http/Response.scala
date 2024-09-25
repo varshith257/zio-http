@@ -48,6 +48,17 @@ final case class Response(
     self.addCookie(Flash.Setter.run(setter).copy(path = Some(Path.root)))
 
   /**
+   * Transfer-Encoding is added only for HTTP/1.1 and above
+   */
+  def addHeaderBasedOnVersion(header: Header, requestVersion: Version): Response = {
+    if (header.name == Header.TransferEncoding.name && requestVersion.ordinal < Version.Http_1_1.ordinal) {
+      self
+    } else {
+      addHeader(header)
+    }
+  }
+
+  /**
    * Collects the potentially streaming body of the response into a single
    * chunk.
    *
