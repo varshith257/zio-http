@@ -217,6 +217,14 @@ object ConformanceSpec extends ZIOHttpSpec {
       ),
       suite("HTTP Headers")(
         suite("code_400_after_bad_host_request")(
+          test("should return 200 OK if Host header is present") {
+            val route           = Method.GET / "test" -> Handler.ok
+            val app             = Routes(route)
+            val requestWithHost = Request.get("/test").addHeader(Header.Host("localhost"))
+            for {
+              response <- app.runZIO(requestWithHost)
+            } yield assertTrue(response.status == Status.Ok)
+          },
           test("should return 400 Bad Request if Host header is missing") {
             val route              = Method.GET / "test" -> Handler.ok
             val app                = Routes(route)
@@ -448,46 +456,23 @@ object ConformanceSpec extends ZIOHttpSpec {
           } yield assertTrue(isValid)
         },
       ),
-      suite("conformance")(
-        test(
-          "should send 100 Continue before 101 Switching Protocols when both Upgrade and Expect headers are present",
-        ) {
-          val continueHandler = Handler.fromZIO {
-            ZIO.succeed(Response.status(Status.Continue))
-          }
+      suite("HTTP")(
+        test("should return 400 Bad Request if header contains CR, LF, or NULL(reject_fields_contaning_cr_lf_nul)") {
+          val route = Method.GET / "test" -> Handler.ok
+          val app   = Routes(route)
 
-          val switchingProtocolsHandler = Handler.fromZIO {
-            ZIO.succeed(
-              Response
-                .status(Status.SwitchingProtocols)
-                .addHeader(Header.Connection.KeepAlive)
-                .addHeader(Header.Upgrade.Protocol("https", "1.1")),
-            )
-          }
-          val app                       = Routes(
-            Method.POST / "upgrade" -> continueHandler,
-            Method.GET / "switch"   -> switchingProtocolsHandler,
-          )
-          val initialRequest            = Request
-            .post("/upgrade", Body.empty)
-            .addHeader(Header.Expect.`100-continue`)
-            .addHeader(Header.Connection.KeepAlive)
-            .addHeader(Header.Upgrade.Protocol("https", "1.1"))
-
-          val followUpRequest = Request.get("/switch")
+          val requestWithCRLFHeader = Request.get("/test").addHeader("InvalidHeader", "Value\r\n")
+          val requestWithNullHeader = Request.get("/test").addHeader("InvalidHeader", "Value\u0000")
 
           for {
-            firstResponse  <- app.runZIO(initialRequest)
-            secondResponse <- app.runZIO(followUpRequest)
-
-          } yield assertTrue(
-            firstResponse.status == Status.Continue,
-            secondResponse.status == Status.SwitchingProtocols,
-            secondResponse.headers.contains(Header.Upgrade.name),
-            secondResponse.headers.contains(Header.Connection.name),
-          )
+            responseCRLF <- app.runZIO(requestWithCRLFHeader)
+            responseNull <- app.runZIO(requestWithNullHeader)
+          } yield {
+            assertTrue(responseCRLF.status == Status.BadRequest) &&
+            assertTrue(responseNull.status == Status.BadRequest)
+          }
         },
-        test("should send Upgrade header with 426 Upgrade Required response") {
+        test("should send Upgrade header with 426 Upgrade Required response(send_upgrade_426)") {
           val app = Routes(
             Method.GET / "test" -> Handler.fromResponse(
               Response
@@ -505,7 +490,7 @@ object ConformanceSpec extends ZIOHttpSpec {
             response.headers.contains(Header.Upgrade.name),
           )
         },
-        test("should send Upgrade header with 101 Switching Protocols response") {
+        test("should send Upgrade header with 101 Switching Protocols response(send_upgrade_101)") {
           val app = Routes(
             Method.GET / "switch" -> Handler.fromResponse(
               Response
@@ -523,7 +508,38 @@ object ConformanceSpec extends ZIOHttpSpec {
             response.headers.contains(Header.Upgrade.name),
           )
         },
-        test("should not switch to a protocol not indicated by the client in the Upgrade header") {
+        test("should not include Content-Length header for 1xx and 204 No Content responses(content_length_1XX_204)") {
+          val route1xxContinue = Method.GET / "continue" -> Handler.fromResponse(Response(status = Status.Continue))
+          val route1xxSwitch   =
+            Method.GET / "switching-protocols" -> Handler.fromResponse(Response(status = Status.SwitchingProtocols))
+          val route1xxProcess =
+            Method.GET / "processing" -> Handler.fromResponse(Response(status = Status.Processing))
+          val route204NoContent =
+            Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
+
+          val app = Routes(route1xxContinue, route1xxSwitch, route1xxProcess, route204NoContent)
+
+          val requestContinue  = Request.get("/continue")
+          val requestSwitch    = Request.get("/switching-protocols")
+          val requestProcess   = Request.get("/processing")
+          val requestNoContent = Request.get("/no-content")
+
+          for {
+            responseContinue  <- app.runZIO(requestContinue)
+            responseSwitch    <- app.runZIO(requestSwitch)
+            responseProcess   <- app.runZIO(requestProcess)
+            responseNoContent <- app.runZIO(requestNoContent)
+
+          } yield assertTrue(
+            !responseContinue.headers.contains(Header.ContentLength.name),
+            !responseSwitch.headers.contains(Header.ContentLength.name),
+            !responseProcess.headers.contains(Header.ContentLength.name),
+            !responseNoContent.headers.contains(Header.ContentLength.name),
+          )
+        },
+        test(
+          "should not switch to a protocol not indicated by the client in the Upgrade header(switch_protocol_without_client)",
+        ) {
           val app = Routes(
             Method.GET / "switch" -> Handler.fromFunctionZIO { (request: Request) =>
               val clientUpgrade = request.headers.get(Header.Upgrade.name)
@@ -565,58 +581,109 @@ object ConformanceSpec extends ZIOHttpSpec {
             responseWithoutUpgrade.status == Status.Ok,
           )
         },
-        test("should return 200 OK if Host header is present") {
-          val route           = Method.GET / "test" -> Handler.ok
-          val app             = Routes(route)
-          val requestWithHost = Request.get("/test").addHeader(Header.Host("localhost"))
-          for {
-            response <- app.runZIO(requestWithHost)
-          } yield assertTrue(response.status == Status.Ok)
-        },
-        test("should return 400 Bad Request if header contains CR, LF, or NULL") {
-          val route = Method.GET / "test" -> Handler.ok
-          val app   = Routes(route)
-
-          val requestWithCRLFHeader = Request.get("/test").addHeader("InvalidHeader", "Value\r\n")
-          val requestWithNullHeader = Request.get("/test").addHeader("InvalidHeader", "Value\u0000")
-
-          for {
-            responseCRLF <- app.runZIO(requestWithCRLFHeader)
-            responseNull <- app.runZIO(requestWithNullHeader)
-          } yield {
-            assertTrue(responseCRLF.status == Status.BadRequest) &&
-            assertTrue(responseNull.status == Status.BadRequest)
+        test(
+          "should send 100 Continue before 101 Switching Protocols when both Upgrade and Expect headers are present(continue_before_upgrade)",
+        ) {
+          val continueHandler = Handler.fromZIO {
+            ZIO.succeed(Response.status(Status.Continue))
           }
-        },
-        test("should not include Content-Length header for 1xx and 204 No Content responses") {
-          val route1xxContinue = Method.GET / "continue" -> Handler.fromResponse(Response(status = Status.Continue))
-          val route1xxSwitch   =
-            Method.GET / "switching-protocols" -> Handler.fromResponse(Response(status = Status.SwitchingProtocols))
-          val route1xxProcess =
-            Method.GET / "processing" -> Handler.fromResponse(Response(status = Status.Processing))
-          val route204NoContent =
-            Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
 
-          val app = Routes(route1xxContinue, route1xxSwitch, route1xxProcess, route204NoContent)
+          val switchingProtocolsHandler = Handler.fromZIO {
+            ZIO.succeed(
+              Response
+                .status(Status.SwitchingProtocols)
+                .addHeader(Header.Connection.KeepAlive)
+                .addHeader(Header.Upgrade.Protocol("https", "1.1")),
+            )
+          }
+          val app                       = Routes(
+            Method.POST / "upgrade" -> continueHandler,
+            Method.GET / "switch"   -> switchingProtocolsHandler,
+          )
+          val initialRequest            = Request
+            .post("/upgrade", Body.empty)
+            .addHeader(Header.Expect.`100-continue`)
+            .addHeader(Header.Connection.KeepAlive)
+            .addHeader(Header.Upgrade.Protocol("https", "1.1"))
 
-          val requestContinue  = Request.get("/continue")
-          val requestSwitch    = Request.get("/switching-protocols")
-          val requestProcess   = Request.get("/processing")
-          val requestNoContent = Request.get("/no-content")
+          val followUpRequest = Request.get("/switch")
 
           for {
-            responseContinue  <- app.runZIO(requestContinue)
-            responseSwitch    <- app.runZIO(requestSwitch)
-            responseProcess   <- app.runZIO(requestProcess)
-            responseNoContent <- app.runZIO(requestNoContent)
+            firstResponse  <- app.runZIO(initialRequest)
+            secondResponse <- app.runZIO(followUpRequest)
 
           } yield assertTrue(
-            !responseContinue.headers.contains(Header.ContentLength.name),
-            !responseSwitch.headers.contains(Header.ContentLength.name),
-            !responseProcess.headers.contains(Header.ContentLength.name),
-            !responseNoContent.headers.contains(Header.ContentLength.name),
+            firstResponse.status == Status.Continue,
+            secondResponse.status == Status.SwitchingProtocols,
+            secondResponse.headers.contains(Header.Upgrade.name),
+            secondResponse.headers.contains(Header.Connection.name),
           )
         },
+        test("should not return forbidden duplicate headers in response(duplicate_fields)") {
+          val app = Routes(
+            Method.GET / "test" -> Handler.fromResponse(
+              Response
+                .status(Status.Ok)
+                .addHeader(Header.XFrameOptions.Deny)
+                .addHeader(Header.XFrameOptions.SameOrigin),
+            ),
+          )
+          for {
+            response <- app.runZIO(Request.get("/test"))
+          } yield assertTrue(
+            response.headers.count(
+              _._1 == Header.XFrameOptions.name,
+            ) == 1,
+          )
+        },
+      ),
+      suite("cache-control")(
+        test("Cache-Control should not have quoted string for max-age directive(response_directive_max_age)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.CacheControl.MaxAge(5)) 
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Cache-Control", """max-age="5"""")) 
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.headers.get(Header.CacheControl.name).contains("max-age=5"),
+            responseInvalid.headers.get(Header.CacheControl.name).contains("""max-age="5""""),
+          )
+        },
+        test("Cache-Control should not have quoted string for s-maxage directive(response_directive_s_maxage)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.CacheControl.SMaxAge(10))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Cache-Control", """s-maxage="10""""))
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.headers.get(Header.CacheControl.name).contains("s-maxage=10"),
+            responseInvalid.headers.get(Header.CacheControl.name).contains("""s-maxage="10""""),
+          )
+        },
+      ),
+      suite("conformance")(
         test("should not include Content-Length header for 204 No Content responses") {
           val route = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
           val app   = Routes(route)
