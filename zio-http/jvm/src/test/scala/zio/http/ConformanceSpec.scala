@@ -292,6 +292,100 @@ object ConformanceSpec extends ZIOHttpSpec {
             !response.headers.contains(Header.TransferEncoding.name),
           )
         },
+        suite("sts")(
+          suite("sts_directives_only_allowed_once")(
+            test("should return valid if each directive appears only once in STS header") {
+              val app = Routes(
+                Method.GET / "secure" -> Handler.fromResponse(
+                  Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000; includeSubDomains")),
+                ),
+              )
+
+              val request = Request.get("/secure").withSecure(true)
+
+              for {
+                response <- app.runZIO(request)
+              } yield assertTrue(response.status == Status.Ok) &&
+                assertTrue(response.headers.contains(Header.StrictTransportSecurity.name))
+            },
+            test("should return invalid if STS header contains duplicate directives") {
+              val app = Routes(
+                Method.GET / "secure" -> Handler.fromResponse(
+                  Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000; max-age=31536000")),
+                ),
+              )
+
+              val request = Request.get("/secure").withSecure(true)
+
+              for {
+                response <- app.runZIO(request)
+              } yield assertTrue(response.status == Status.Ok) &&
+                assertTrue(response.headers.contains(Header.StrictTransportSecurity.name))
+            },
+          ),
+          suite("only_one_sts_header_allowed")(
+            test("should return valid if only one STS header is present") {
+              val app = Routes(
+                Method.GET / "secure" -> Handler.fromResponse(
+                  Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000")),
+                ),
+              )
+
+              val request = Request.get("/secure").withSecure(true)
+
+              for {
+                response <- app.runZIO(request)
+              } yield assertTrue(response.status == Status.Ok) &&
+                assertTrue(response.headers.count(Header.StrictTransportSecurity.name) == 1)
+            },
+            test("should return invalid if more than one STS header is present") {
+              val app = Routes(
+                Method.GET / "secure" -> Handler.fromResponse(
+                  Response.ok
+                    .addHeader(Header.StrictTransportSecurity("max-age=31536000"))
+                    .addHeader(Header.StrictTransportSecurity("max-age=31536000")),
+                ),
+              )
+
+              val request = Request.get("/secure").withSecure(true)
+
+              for {
+                response <- app.runZIO(request)
+              } yield assertTrue(response.status == Status.Ok) &&
+                assertTrue(response.headers.count(Header.StrictTransportSecurity.name) > 1)
+            },
+          ),
+          suite("sts_header_http")(
+            test("should not include STS header in HTTP response") {
+              val app = Routes(
+                Method.GET / "non-secure" -> Handler.fromResponse(
+                  Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000")),
+                ),
+              )
+
+              val request = Request.get("/non-secure").withSecure(false)
+
+              for {
+                response <- app.runZIO(request)
+              } yield assertTrue(response.status == Status.Ok) &&
+                assertTrue(!response.headers.contains(Header.StrictTransportSecurity.name))
+            },
+            test("should include STS header in HTTPS response") {
+              val app = Routes(
+                Method.GET / "secure" -> Handler.fromResponse(
+                  Response.ok.addHeader(Header.StrictTransportSecurity("max-age=31536000")),
+                ),
+              )
+
+              val request = Request.get("/secure").withSecure(true)
+
+              for {
+                response <- app.runZIO(request)
+              } yield assertTrue(response.status == Status.Ok) &&
+                assertTrue(response.headers.contains(Header.StrictTransportSecurity.name))
+            },
+          ),
+        ),
       ),
       suite("conformance")(
         test(
