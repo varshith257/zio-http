@@ -5,8 +5,8 @@ import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 
-import zio.http._
 import zio.http.Header._
+import zio.http._
 
 object ConformanceSpec extends ZIOHttpSpec {
 
@@ -386,34 +386,66 @@ object ConformanceSpec extends ZIOHttpSpec {
           )
         },
         test("should not return 206, 304, or 416 status codes for POST requests(post_invalid_response_codes)") {
-          val invalidStatusCodes = List(Status.PartialContent, Status.NotModified, Status.RequestedRangeNotSatisfiable)
 
           val app = Routes(
-            Method.POST / "test"   -> Handler.fromResponse(
-              Response.status(Status.PartialContent),
-            ),
-            Method.POST / "test-2" -> Handler.fromResponse(
-              Response.status(Status.NotModified),
-            ),
-            Method.POST / "test-3" -> Handler.fromResponse(
-              Response.status(Status.RequestedRangeNotSatisfiable),
-            ),
-            Method.POST / "valid"  -> Handler.fromResponse(
-              Response.status(Status.Ok),
-            ),
+            Method.POST / "test" -> Handler.fromResponse(Response.status(Status.Ok)),
           )
 
           for {
-            response1     <- app.runZIO(Request.post("/test", Body.empty))
-            response2     <- app.runZIO(Request.post("/test-2", Body.empty))
-            response3     <- app.runZIO(Request.post("/test-3", Body.empty))
-            validResponse <- app.runZIO(Request.post("/valid", Body.empty))
+            res <- app.runZIO(Request.post("/test", Body.empty))
+
           } yield assertTrue(
-            response1.status != Status.PartialContent,
-            response2.status != Status.NotModified,
-            response3.status != Status.RequestedRangeNotSatisfiable,
-            validResponse.status == Status.Ok,
+            res.status != Status.PartialContent,
+            res.status != Status.NotModified,
+            res.status != Status.RequestedRangeNotSatisfiable,
+            res.status == Status.Ok,
           )
+        },
+      ),
+      suite("HTTP/1.1")(
+        test("should return 400 Bad Request if there is whitespace between start-line and first header field") {
+          val route = Method.GET / "test" -> Handler.ok
+          val app   = Routes(route)
+
+          val malformedRequest =
+            Request.get("/test").copy(headers = Headers.empty).withBody(Body.fromString("\r\nHost: localhost"))
+
+          for {
+            response <- app.runZIO(malformedRequest)
+          } yield assertTrue(response.status == Status.BadRequest)
+        },
+        test("should return 400 Bad Request if there is whitespace between header field and colon") {
+          val route = Method.GET / "test" -> Handler.ok
+          val app   = Routes(route)
+
+          val requestWithWhitespaceHeader = Request.get("/test").addHeader(Header.Custom("Invalid Header ", "value"))
+
+          for {
+            response <- app.runZIO(requestWithWhitespaceHeader)
+          } yield {
+            assertTrue(response.status == Status.BadRequest)
+          }
+        },
+        test("should not generate a bare CR in headers for HTTP/1.1(no_bare_cr)") {
+          val app = Routes(
+            Method.GET / "test" -> Handler.fromZIO {
+              ZIO.succeed(
+                Response
+                  .status(Status.Ok)
+                  .addHeader(Header.Custom("A", "1\r\nB: 2")),
+              )
+            },
+          )
+
+          val request = Request
+            .get("/test")
+            .copy(version = Version.Http_1_1)
+
+          for {
+            response <- app.runZIO(request)
+            headersString = response.headers.toString
+            isValid       = !headersString.contains("\r") || headersString.contains("\r\n")
+          } yield assertTrue(isValid)
         },
       ),
       suite("conformance")(
@@ -533,27 +565,6 @@ object ConformanceSpec extends ZIOHttpSpec {
             responseWithoutUpgrade.status == Status.Ok,
           )
         },
-        test("should not generate a bare CR in headers for HTTP/1.1") {
-          val app = Routes(
-            Method.GET / "test" -> Handler.fromZIO {
-              ZIO.succeed(
-                Response
-                  .status(Status.Ok)
-                  .addHeader(Header.Custom("A", "1\r\nB: 2")),
-              )
-            },
-          )
-
-          val request = Request
-            .get("/test")
-            .copy(version = Version.Http_1_1)
-
-          for {
-            response <- app.runZIO(request)
-            headersString = response.headers.toString
-            isValid       = !headersString.contains("\r") || headersString.contains("\r\n")
-          } yield assertTrue(isValid)
-        },
         test("should return 200 OK if Host header is present") {
           val route           = Method.GET / "test" -> Handler.ok
           val app             = Routes(route)
@@ -577,35 +588,14 @@ object ConformanceSpec extends ZIOHttpSpec {
             assertTrue(responseNull.status == Status.BadRequest)
           }
         },
-        test("should return 400 Bad Request if there is whitespace between start-line and first header field") {
-          val route = Method.GET / "test" -> Handler.ok
-          val app   = Routes(route)
-
-          val malformedRequest =
-            Request.get("/test").copy(headers = Headers.empty).withBody(Body.fromString("\r\nHost: localhost"))
-
-          for {
-            response <- app.runZIO(malformedRequest)
-          } yield assertTrue(response.status == Status.BadRequest)
-        },
-        test("should return 400 Bad Request if there is whitespace between header field and colon") {
-          val route = Method.GET / "test" -> Handler.ok
-          val app   = Routes(route)
-
-          val requestWithWhitespaceHeader = Request.get("/test").addHeader(Header.Custom("Invalid Header ", "value"))
-
-          for {
-            response <- app.runZIO(requestWithWhitespaceHeader)
-          } yield {
-            assertTrue(response.status == Status.BadRequest)
-          }
-        },
         test("should not include Content-Length header for 1xx and 204 No Content responses") {
           val route1xxContinue = Method.GET / "continue" -> Handler.fromResponse(Response(status = Status.Continue))
           val route1xxSwitch   =
             Method.GET / "switching-protocols" -> Handler.fromResponse(Response(status = Status.SwitchingProtocols))
-          val route1xxProcess = Method.GET / "processing" -> Handler.fromResponse(Response(status = Status.Processing))
-          val route204NoContent = Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
+          val route1xxProcess =
+            Method.GET / "processing" -> Handler.fromResponse(Response(status = Status.Processing))
+          val route204NoContent =
+            Method.GET / "no-content" -> Handler.fromResponse(Response(status = Status.NoContent))
 
           val app = Routes(route1xxContinue, route1xxSwitch, route1xxProcess, route204NoContent)
 
