@@ -175,7 +175,7 @@ object ConformanceSpec extends ZIOHttpSpec {
             Method.GET / "no-content" -> Handler.fromResponse(
               Response
                 .status(Status.NotModified)
-                .setBody(""),
+                .copy(body = Body.empty),
             ),
           )
 
