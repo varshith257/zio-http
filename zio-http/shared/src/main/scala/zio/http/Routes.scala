@@ -250,7 +250,17 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
       .fromFunctionHandler[Request] { req =>
         val chunk = tree.get(req.method, req.path)
         chunk.length match {
-          case 0 => Handler.notFound
+          case 0 =>
+            val allowedMethods = Method.all.filter(method => tree.get(method, req.path).nonEmpty)
+            if (allowedMethods.nonEmpty) {
+              Handler.response(
+                Response
+                  .status(Status.MethodNotAllowed)
+                  .addHeader(Header.Allow(NonEmptyChunk.fromIterable(allowedMethods))),
+              )
+            } else {
+              Handler.notFound
+            }
           case 1 => chunk(0)
           case n => // TODO: Support precomputed fallback among all chunk elements
             var acc = chunk(0)

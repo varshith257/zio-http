@@ -132,8 +132,7 @@ object ConformanceSpec extends ZIOHttpSpec {
           )
         },
         test("should include Allow header for 405 Method Not Allowed response(code_405_allow)") {
-          val allowedMethods = NonEmptyChunk(Method.GET, Method.POST, Method.PUT)
-          val app            = Routes(
+          val app = Routes(
             Method.POST / "not-allowed" -> Handler.fromResponse(
               Response
                 .status(Status.Ok),

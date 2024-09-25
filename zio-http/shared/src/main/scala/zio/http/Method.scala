@@ -77,4 +77,16 @@ object Method {
   case object CONNECT extends Method { val name = "CONNECT" }
 
   case object ANY extends Method { val name = "GET" }
+
+  val all: List[Method] = List(
+    GET,
+    POST,
+    PUT,
+    DELETE,
+    PATCH,
+    OPTIONS,
+    HEAD,
+    TRACE,
+    CONNECT,
+  )
 }
