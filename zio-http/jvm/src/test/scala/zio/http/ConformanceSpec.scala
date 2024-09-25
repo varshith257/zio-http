@@ -630,9 +630,11 @@ object ConformanceSpec extends ZIOHttpSpec {
           )
           for {
             response <- app.runZIO(Request.get("/test"))
-          } yield assertTrue(
-            response.headers.values(Header.XFrameOptions.name).length == 1,
-          )
+          } yield {
+            val headersList          = response.headers.toList
+            val xFrameOptionsHeaders = headersList.filter(_._1 == Header.XFrameOptions.name)
+            assertTrue(xFrameOptionsHeaders.length == 1)
+          }
         },
       ),
       suite("cache-control")(
