@@ -214,9 +214,11 @@ object ConformanceSpec extends ZIOHttpSpec {
           )
         },
         test("should include Location header in 300 MULTIPLE CHOICES response(code_300_location)") {
+          val validUrl = URL.fromString("/People.html#tim").toOption.getOrElse(URL.root)
+
           val validResponse = Response
             .status(Status.MultipleChoices)
-            .addHeader(Header.Location("/People.html#tim"))
+            .addHeader(Header.Location(validUrl))
 
           val invalidResponse = Response
             .status(Status.MultipleChoices)
@@ -244,7 +246,7 @@ object ConformanceSpec extends ZIOHttpSpec {
 
           val invalidResponse = Response
             .status(Status.MultipleChoices)
-            .copy(body = Body.empty) // No body content
+            .copy(body = Body.empty)
 
           val app = Routes(
             Method.GET / "valid"   -> Handler.fromResponse(validResponse),
@@ -253,12 +255,15 @@ object ConformanceSpec extends ZIOHttpSpec {
 
           for {
             responseValid   <- app.runZIO(Request.get("/valid"))
+            validBody       <- responseValid.body.asString
             responseInvalid <- app.runZIO(Request.get("/invalid"))
+            invalidBody     <- responseInvalid.body.asString
+
           } yield assertTrue(
             responseValid.status == Status.MultipleChoices,
-            responseValid.bodyAsString.contains("ABC"),
+            validBody.contains("ABC"),
             responseInvalid.status == Status.MultipleChoices,
-            responseInvalid.bodyAsString.isEmpty,
+            invalidBody.isEmpty,
           )
         },
         test("should not require body content for HEAD requests(code_300_metadata)") {
