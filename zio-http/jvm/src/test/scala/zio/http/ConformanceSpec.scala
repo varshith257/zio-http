@@ -705,13 +705,11 @@ object ConformanceSpec extends ZIOHttpSpec {
               )
             }
           },
-          test("should not send more than one CSP-Report-Only header (duplicate_csp_ro)") {
-            // Note: Content-Security-Policy-Report-Only Header to be Added in Header.Scala
-          },
+          // Note: Content-Security-Policy-Report-Only Header to be Supported
         ),
       ),
       suite("sts")(
-        // Note: Strict-Transport-Security Header to be Added in Header.Scala
+        // Note: Strict-Transport-Security Header to be Supported
 
       ),
       suite("Transfer-Encoding")(
@@ -915,13 +913,15 @@ object ConformanceSpec extends ZIOHttpSpec {
           } yield assertTrue(isValid)
         },
         test("should allow one CRLF in front of the request line (allow_crlf_start)") {
+          val crlfPrefix = "\r\n".getBytes
+
           val validRequest = Request
             .get("/valid")
-            .withRawData("\r\n".getBytes ++ Request.get("/valid").rawData)
+            .withBody(Body.fromChunk(Chunk.fromArray(crlfPrefix ++ "GET /valid HTTP/1.1".getBytes)))
 
           val invalidRequest = Request
             .get("/invalid")
-            .withRawData("\r\n".getBytes ++ Request.get("/invalid").rawData)
+            .withBody(Body.fromChunk(Chunk.fromArray(crlfPrefix ++ "GET /invalid HTTP/1.1".getBytes)))
 
           val app = Routes(
             Method.GET / "valid"   -> Handler.fromResponse(Response.status(Status.Ok)),
