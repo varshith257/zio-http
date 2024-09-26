@@ -11,6 +11,19 @@ import zio.test._
 import zio.http._
 
 object ConformanceSpec extends ZIOSpecDefault {
+
+  /**
+   * This test suite is inspired by and built upon the findings from the
+   * research paper: "Who's Breaking the Rules? Studying Conformance to the HTTP
+   * Specifications and its Security Impact" by Jannis Rautenstrauch and Ben
+   * Stock, presented at the 19th ACM Asia Conference on Computer and
+   * Communications Security (ASIA CCS) 2024.
+   *
+   * Paper URL: https://doi.org/10.1145/3634737.3637678 
+   * GitHub Project: https://github.com/cispa/http-conformance
+   *
+   */
+
   val validUrl = URL.decode("http://example.com").toOption.getOrElse(URL.root)
 
   override def spec =
