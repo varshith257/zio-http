@@ -1321,7 +1321,7 @@ object ConformanceSpec extends ZIOSpecDefault {
             responseInvalid <- app.runZIO(Request.get("/invalid"))
           } yield {
             val validCookieAttributes   = responseValid.headers.toList.collect {
-              case h if h.headerName == "Set-Cookie" => h.renderedValue
+              case h if h.headerName == Header.SetCookie.name => h.renderedValue
             }
             val invalidCookieAttributes = responseInvalid.headers.toList.collect {
               case h if h.headerName == "Set-Cookie" => h.renderedValue
