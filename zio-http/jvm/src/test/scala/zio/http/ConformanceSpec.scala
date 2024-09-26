@@ -572,6 +572,103 @@ object ConformanceSpec extends ZIOHttpSpec {
             !response.headers.contains(Header.TransferEncoding.name),
           )
         },
+        test("should not return overly detailed Server header(server_header_long)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Server", "SimpleServer"))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Custom("Server", "a" * 101))
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield {
+            assertTrue(
+              responseValid.headers.get(Header.Server.name).exists(_.length <= 100),
+              responseInvalid.headers.get(Header.Server.name).exists(_.length > 100),
+            )
+          }
+        },
+        test("should include Content-Type header for responses with content(content_type_header_required)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.ContentType(MediaType.text.html))
+            .copy(body = Body.fromString("<div>ABC</div>"))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .copy(body = Body.fromString("<div>ABC</div>"))
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield {
+            assertTrue(
+              responseValid.headers.contains(Header.ContentType.name),
+              !responseInvalid.headers.contains(Header.ContentType.name),
+            )
+          }
+        },
+        test("should include Accept-Patch header when PATCH is supported(accept_patch_presence)") {
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.AcceptPatch(NonEmptyChunk(MediaType.application.json)))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.OPTIONS / "valid"   -> Handler.fromResponse(validResponse),
+            Method.OPTIONS / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.options("/valid"))
+            responseInvalid <- app.runZIO(Request.options("/invalid"))
+          } yield {
+            assertTrue(
+              responseValid.headers.contains(Header.AcceptPatch.name),
+              !responseInvalid.headers.contains(Header.AcceptPatch.name),
+            )
+          }
+        },
+        test("should include Date header in responses (date_header_required)") {
+          val validDate = ZonedDateTime.parse("Thu, 20 Mar 2025 20:03:00 GMT", DateTimeFormatter.RFC_1123_DATE_TIME)
+
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Date(validDate))
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .copy(headers = Headers.empty)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(Request.get("/valid"))
+            responseInvalid <- app.runZIO(Request.get("/invalid"))
+          } yield assertTrue(
+            responseValid.headers.contains(Header.Date.name),
+            !responseInvalid.headers.contains(Header.Date.name),
+          )
+        },
       ),
       suite("sts")(
         // TODO: Strict-Transport-Security Header to be Added in Header.Scala
@@ -1119,7 +1216,7 @@ object ConformanceSpec extends ZIOHttpSpec {
 
           val invalidResponse = Response
             .status(Status.Ok)
-            .addHeader(Header.Custom("Set-Cookie", "test=test; expires=Wed, 20 Mar 25 15:14:45 GMT"))
+            .addHeader(Header.Custom("Set-Cookie", "test=test; expires=Thu, 20 Mar 25 15:14:45 GMT"))
 
           val app = Routes(
             Method.GET / "valid"   -> Handler.fromResponse(validResponse),
