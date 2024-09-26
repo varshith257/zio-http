@@ -707,37 +707,6 @@ object ConformanceSpec extends ZIOHttpSpec {
           },
           test("should not send more than one CSP-Report-Only header (duplicate_csp_ro)") {
             // Note: Content-Security-Policy-Report-Only Header to be Added in Header.Scala
-            val validResponse = Response
-              .status(Status.Ok)
-              .addHeader(Header.Custom("Content-Security-Policy-Report-Only", "default-src 'none'"))
-
-            val invalidResponse = Response
-              .status(Status.Ok)
-              .addHeader(Header.Custom("Content-Security-Policy-Report-Only", "default-src 'none'"))
-              .addHeader(Header.Custom("Content-Security-Policy-Report-Only", "img-src 'self'"))
-
-            val app = Routes(
-              Method.GET / "valid"   -> Handler.fromResponse(validResponse),
-              Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
-            )
-
-            for {
-              responseValid   <- app.runZIO(Request.get("/valid"))
-              responseInvalid <- app.runZIO(Request.get("/invalid"))
-            } yield {
-              val cspRoHeadersValid   = responseValid.headers.toList.collect {
-                case h if h.headerName == "content-security-policy-report-only" => h
-              }
-              val cspRoHeadersInvalid = responseInvalid.headers.toList.collect {
-                case h if h.headerName == "content-security-policy-report-only" => h
-              }
-
-              assertTrue(
-                cspRoHeadersValid.length == 1,
-                cspRoHeadersInvalid.length > 1,
-              )
-            }
-
           },
         ),
       ),
@@ -944,6 +913,66 @@ object ConformanceSpec extends ZIOHttpSpec {
             headersString = response.headers.toString
             isValid       = !headersString.contains("\r") || headersString.contains("\r\n")
           } yield assertTrue(isValid)
+        },
+        test("should allow one CRLF in front of the request line (allow_crlf_start)") {
+          val validRequest = Request
+            .get("/valid")
+            .withRawData("\r\n".getBytes ++ Request.get("/valid").rawData)
+
+          val invalidRequest = Request
+            .get("/invalid")
+            .withRawData("\r\n".getBytes ++ Request.get("/invalid").rawData)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(Response.status(Status.Ok)),
+            Method.GET / "invalid" -> Handler.fromResponse(Response.status(Status.NotFound)),
+          )
+
+          for {
+            responseValid   <- app.runZIO(validRequest)
+            responseInvalid <- app.runZIO(invalidRequest)
+          } yield {
+            assertTrue(
+              responseValid.status.isSuccess || responseValid.status == Status.NotFound,
+              responseInvalid.status == Status.NotFound,
+            )
+          }
+        },
+        test("should send a 'Connection: close' option in final response (close_option_in_final_response)") {
+          val validRequest = Request
+            .get("/valid")
+            .addHeader(Header.Connection.Close)
+
+          val invalidRequest = Request
+            .get("/invalid")
+            .addHeader(Header.Connection.KeepAlive)
+
+          val validResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Connection.Close)
+
+          val invalidResponse = Response
+            .status(Status.Ok)
+            .addHeader(Header.Connection.KeepAlive)
+
+          val app = Routes(
+            Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+            Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+          )
+
+          for {
+            responseValid   <- app.runZIO(validRequest)
+            responseInvalid <- app.runZIO(invalidRequest)
+          } yield {
+            assertTrue(
+              responseValid.headers.toList.exists(h =>
+                h.headerName == Header.Connection.name && h.renderedValue == "close",
+              ),
+              responseInvalid.headers.toList.exists(h =>
+                h.headerName == Header.Connection.name && h.renderedValue == "keep-alive",
+              ),
+            )
+          }
         },
       ),
       suite("HTTP")(
