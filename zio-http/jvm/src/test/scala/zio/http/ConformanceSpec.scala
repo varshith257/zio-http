@@ -1328,8 +1328,8 @@ object ConformanceSpec extends ZIOSpecDefault {
             }
             assertTrue(
               validCookieAttributes.nonEmpty,
-              validCookieAttributes.exists(_.contains("path=/")),
-              !validCookieAttributes.exists(_.contains("path=/abc")),
+              validCookieAttributes.exists(_.toLowerCase.contains("path=/")),
+              !validCookieAttributes.exists(_.toLowerCase.contains("path=/abc")),
             ) &&
             assertTrue(
               invalidCookieAttributes.exists(_.contains("path=/")),
