@@ -1229,7 +1229,7 @@ object ConformanceSpec extends ZIOHttpSpec {
           } yield {
             val expiresValid   = responseValid.headers.toList.exists(_.renderedValue.contains("Expires="))
             val expiresInvalid =
-              responseInvalid.headers.toList.exists(_.renderedValue.contains("expires=Wed, 20 Mar 25"))
+              responseInvalid.headers.toList.exists(_.renderedValue.contains("expires=Thu, 20 Mar 25"))
 
             assertTrue(
               expiresValid,
