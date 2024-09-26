@@ -1327,10 +1327,13 @@ object ConformanceSpec extends ZIOSpecDefault {
               case h if h.headerName == "Set-Cookie" => h.renderedValue
             }
             assertTrue(
-              validCookieAttributes.exists(_.contains("path=/")) &&
-                !validCookieAttributes.exists(_.contains("path=/abc")),
-              invalidCookieAttributes.exists(_.contains("path=/")) &&
-                invalidCookieAttributes.exists(_.contains("path=/abc")),
+              validCookieAttributes.nonEmpty,
+              validCookieAttributes.exists(_.contains("path=/")),
+              !validCookieAttributes.exists(_.contains("path=/abc")),
+            ) &&
+            assertTrue(
+              invalidCookieAttributes.exists(_.contains("path=/")),
+              invalidCookieAttributes.exists(_.contains("path=/abc")),
             )
           }
         },
