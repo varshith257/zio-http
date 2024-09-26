@@ -1156,6 +1156,60 @@ object ConformanceSpec extends ZIOHttpSpec {
             assertTrue(xFrameOptionsHeaders.length == 1)
           }
         },
+        suite("Content-Length")(
+          test("Content-Length in HEAD must match the one in GET (content_length_same_head_get)") {
+            val getResponse = Response
+              .status(Status.Ok)
+              .addHeader(Header.ContentLength(14))
+              .copy(body = Body.fromString("<div>ABC</div>"))
+
+            val app = Routes(
+              Method.GET / "test"  -> Handler.fromResponse(getResponse),
+              Method.HEAD / "test" -> Handler.fromResponse(getResponse.copy(body = Body.empty)),
+            )
+
+            for {
+              getResponse  <- app.runZIO(Request.get("/test"))
+              headResponse <- app.runZIO(Request.head("/test"))
+              getContentLength  = getResponse.headers.get(Header.ContentLength.name).map(_.toInt)
+              headContentLength = headResponse.headers.get(Header.ContentLength.name).map(_.toInt)
+            } yield assertTrue(
+              headContentLength == getContentLength,
+            )
+          },
+          test("Content-Length in 304 Not Modified must match the one in 200 OK (content_length_same_304_200)") {
+            val app = Routes(
+              Method.GET / "test" -> Handler.fromFunction { (request: Request) =>
+                request.headers.get(Header.IfModifiedSince.name) match {
+                  case Some(_) =>
+                    Response.status(Status.NotModified).addHeader(Header.ContentLength(14)).copy(body = Body.empty)
+                  case None    =>
+                    Response
+                      .status(Status.Ok)
+                      .addHeader(Header.ContentLength(14))
+                      .copy(body = Body.fromString("<div>ABC</div>"))
+                }
+              },
+            )
+
+            val conditionalRequest = Request
+              .get("/test")
+              .addHeader(
+                Header.IfModifiedSince(
+                  ZonedDateTime.parse("Thu, 25 Mar 2025 07:28:00 GMT", DateTimeFormatter.RFC_1123_DATE_TIME),
+                ),
+              )
+
+            for {
+              normalResponse      <- app.runZIO(Request.get("/test"))
+              conditionalResponse <- app.runZIO(conditionalRequest)
+              normalContentLength      = normalResponse.headers.get(Header.ContentLength.name).map(_.toInt)
+              conditionalContentLength = conditionalResponse.headers.get(Header.ContentLength.name).map(_.toInt)
+            } yield assertTrue(
+              normalContentLength == conditionalContentLength,
+            )
+          },
+        ),
       ),
       suite("cache-control")(
         test("Cache-Control should not have quoted string for max-age directive(response_directive_max_age)") {
