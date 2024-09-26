@@ -676,12 +676,12 @@ object ConformanceSpec extends ZIOHttpSpec {
           test("should not send more than one CSP header (duplicate_csp)") {
             val validResponse = Response
               .status(Status.Ok)
-              .addHeader(Header.ContentSecurityPolicy("default-src 'self'; script-src 'none'"))
+              .addHeader(Header.ContentSecurityPolicy.SourcePolicy(SourcePolicyType.`default-src`, Source.Self))
 
             val invalidResponse = Response
               .status(Status.Ok)
-              .addHeader(Header.ContentSecurityPolicy("default-src 'self'; script-src 'none'"))
-              .addHeader(Header.ContentSecurityPolicy("img-src 'self'"))
+              .addHeader(Header.ContentSecurityPolicy.SourcePolicy(SourcePolicyType.`default-src`, Source.Self))
+              .addHeader(Header.ContentSecurityPolicy.SourcePolicy(SourcePolicyType.`img-src`, Source.Self))
 
             val app = Routes(
               Method.GET / "valid"   -> Handler.fromResponse(validResponse),
