@@ -672,9 +672,77 @@ object ConformanceSpec extends ZIOHttpSpec {
             !responseInvalid.headers.contains(Header.Date.name),
           )
         },
+        suite("CSP Header")(
+          test("should not send more than one CSP header (duplicate_csp)") {
+            val validResponse = Response
+              .status(Status.Ok)
+              .addHeader(Header.ContentSecurityPolicy("default-src 'self'; script-src 'none'"))
+
+            val invalidResponse = Response
+              .status(Status.Ok)
+              .addHeader(Header.ContentSecurityPolicy("default-src 'self'; script-src 'none'"))
+              .addHeader(Header.ContentSecurityPolicy("img-src 'self'"))
+
+            val app = Routes(
+              Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+              Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+            )
+
+            for {
+              responseValid   <- app.runZIO(Request.get("/valid"))
+              responseInvalid <- app.runZIO(Request.get("/invalid"))
+            } yield {
+              val cspHeadersValid   = responseValid.headers.toList.collect {
+                case h if h.headerName == Header.ContentSecurityPolicy.name => h
+              }
+              val cspHeadersInvalid = responseInvalid.headers.toList.collect {
+                case h if h.headerName == Header.ContentSecurityPolicy.name => h
+              }
+
+              assertTrue(
+                cspHeadersValid.length == 1,
+                cspHeadersInvalid.length > 1,
+              )
+            }
+          },
+          test("should not send more than one CSP-Report-Only header (duplicate_csp_ro)") {
+            // Note: Content-Security-Policy-Report-Only Header to be Added in Header.Scala
+            val validResponse = Response
+              .status(Status.Ok)
+              .addHeader(Header.Custom("Content-Security-Policy-Report-Only", "default-src 'none'"))
+
+            val invalidResponse = Response
+              .status(Status.Ok)
+              .addHeader(Header.Custom("Content-Security-Policy-Report-Only", "default-src 'none'"))
+              .addHeader(Header.Custom("Content-Security-Policy-Report-Only", "img-src 'self'"))
+
+            val app = Routes(
+              Method.GET / "valid"   -> Handler.fromResponse(validResponse),
+              Method.GET / "invalid" -> Handler.fromResponse(invalidResponse),
+            )
+
+            for {
+              responseValid   <- app.runZIO(Request.get("/valid"))
+              responseInvalid <- app.runZIO(Request.get("/invalid"))
+            } yield {
+              val cspRoHeadersValid   = responseValid.headers.toList.collect {
+                case h if h.headerName == "content-security-policy-report-only" => h
+              }
+              val cspRoHeadersInvalid = responseInvalid.headers.toList.collect {
+                case h if h.headerName == "content-security-policy-report-only" => h
+              }
+
+              assertTrue(
+                cspRoHeadersValid.length == 1,
+                cspRoHeadersInvalid.length > 1,
+              )
+            }
+
+          },
+        ),
       ),
       suite("sts")(
-        // TODO: Strict-Transport-Security Header to be Added in Header.Scala
+        // Note: Strict-Transport-Security Header to be Added in Header.Scala
 
       ),
       suite("Transfer-Encoding")(
