@@ -10,7 +10,7 @@ import zio.test._
 
 import zio.http._
 
-object ConformanceSpec extends ZIOHttpSpec {
+object ConformanceSpec extends ZIOSpecDefault {
   val validUrl = URL.decode("http://example.com").toOption.getOrElse(URL.root)
 
   override def spec =
