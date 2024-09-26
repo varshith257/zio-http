@@ -1196,7 +1196,7 @@ object ConformanceSpec extends ZIOHttpSpec {
               .get("/test")
               .addHeader(
                 Header.IfModifiedSince(
-                  ZonedDateTime.parse("Thu, 25 Mar 2025 07:28:00 GMT", DateTimeFormatter.RFC_1123_DATE_TIME),
+                  ZonedDateTime.parse("Thu, 20 Mar 2025 07:28:00 GMT", DateTimeFormatter.RFC_1123_DATE_TIME),
                 ),
               )
 
