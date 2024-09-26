@@ -9,16 +9,16 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: ['**']
+    branches: ["**"]
     types: [opened, synchronize, reopened, edited, labeled]
   push:
-    branches: ['**']
+    branches: ["**"]
     tags: [v*]
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  JDK_JAVA_OPTIONS: '-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8'
-  SBT_OPTS: '-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8'
+  JDK_JAVA_OPTIONS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
+  SBT_OPTS: "-Xms4G -Xmx8G -XX:+UseG1GC -Xss10M -XX:ReservedCodeCacheSize=1G -XX:NonProfiledCodeHeapSize=512m -Dfile.encoding=UTF-8"
 
 jobs:
   build:
@@ -85,8 +85,7 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
 
       - name: Build project
-        run: sbt '++ ${{ matrix.scala }}' test -- -l *ConformanceSpec
-
+        run: sbt '++ ${{ matrix.scala }}' test
 
       - name: Check doc generation
         if: ${{ github.event_name == 'pull_request' }}
@@ -275,7 +274,7 @@ jobs:
 
       - name: Push Codecov
         id: push_codecov
-        run: 'bash <(curl -s https://codecov.io/bash)'
+        run: "bash <(curl -s https://codecov.io/bash)"
 
   Jmh_CachedDateHeaderBenchmark:
     name: Jmh CachedDateHeaderBenchmark
@@ -687,7 +686,21 @@ jobs:
 
   Jmh_cache:
     name: Cache Jmh benchmarks
-    needs: [Jmh_CachedDateHeaderBenchmark, Jmh_ClientBenchmark, Jmh_CookieDecodeBenchmark, Jmh_EndpointBenchmark, Jmh_HttpCollectEval, Jmh_HttpCombineEval, Jmh_HttpNestedFlatMapEval, Jmh_HttpRouteTextPerf, Jmh_ProbeContentTypeBenchmark, Jmh_SchemeDecodeBenchmark, Jmh_ServerInboundHandlerBenchmark, Jmh_UtilBenchmark]
+    needs:
+      [
+        Jmh_CachedDateHeaderBenchmark,
+        Jmh_ClientBenchmark,
+        Jmh_CookieDecodeBenchmark,
+        Jmh_EndpointBenchmark,
+        Jmh_HttpCollectEval,
+        Jmh_HttpCombineEval,
+        Jmh_HttpNestedFlatMapEval,
+        Jmh_HttpRouteTextPerf,
+        Jmh_ProbeContentTypeBenchmark,
+        Jmh_SchemeDecodeBenchmark,
+        Jmh_ServerInboundHandlerBenchmark,
+        Jmh_UtilBenchmark,
+      ]
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     strategy:
       matrix:
@@ -859,7 +872,6 @@ jobs:
              concurrency: ${{steps.result.outputs.concurrency}}
              requests/sec:  ${{steps.result.outputs.request_per_second}}
 
-      
       - name: Performance Report
         id: perf-report
         env:
@@ -938,7 +950,6 @@ jobs:
              concurrency: ${{steps.result.outputs.concurrency}}
              requests/sec:  ${{steps.result.outputs.request_per_second}}
 
-      
       - name: Performance Report
         id: perf-report
         env:
