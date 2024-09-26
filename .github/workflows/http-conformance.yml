@@ -70,4 +70,4 @@ jobs:
           cache: sbt
 
       - name: Run HTTP Conformance Tests
-        run: sbt "testOnly *ConformanceSpec" 
+        run: sbt "testOnly zio.http.ConformanceSpec"
