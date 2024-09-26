@@ -1320,10 +1320,15 @@ object ConformanceSpec extends ZIOSpecDefault {
             responseValid   <- app.runZIO(Request.get("/valid"))
             responseInvalid <- app.runZIO(Request.get("/invalid"))
           } yield {
+            val validCookieAttributes   = responseValid.headers.toList.collect {
+              case h if h.headerName == "Set-Cookie" => h.renderedValue
+            }
             val invalidCookieAttributes = responseInvalid.headers.toList.collect {
               case h if h.headerName == "Set-Cookie" => h.renderedValue
             }
             assertTrue(
+              validCookieAttributes.exists(_.contains("path=/")) &&
+                !validCookieAttributes.exists(_.contains("path=/abc")),
               invalidCookieAttributes.exists(_.contains("path=/")) &&
                 invalidCookieAttributes.exists(_.contains("path=/abc")),
             )

@@ -1,4 +1,4 @@
-name: HTTP Spec Conformance Testing
+name: HTTP Spec Conformance Test
 
 on:
   pull_request:
