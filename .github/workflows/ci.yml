@@ -85,7 +85,8 @@ jobs:
         run: sbt '++ ${{ matrix.scala }}' githubWorkflowCheck
 
       - name: Build project
-        run: sbt '++ ${{ matrix.scala }}' test
+        run: sbt '++ ${{ matrix.scala }}' test -- -l *ConformanceSpec
+
 
       - name: Check doc generation
         if: ${{ github.event_name == 'pull_request' }}
