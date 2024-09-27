@@ -184,7 +184,6 @@ object RoutePattern                                                       {
     }
 
     def getAllMethods(path: Path): Set[Method] = {
-      // Collect all methods that have a route for the given path
       roots.collect {
         case (method, subtree) if subtree.get(path).nonEmpty => method
       }.toSet
