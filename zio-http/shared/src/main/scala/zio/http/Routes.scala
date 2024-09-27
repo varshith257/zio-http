@@ -302,7 +302,7 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
 
     // Check if any header contains invalid characters
     val hasInvalidChar = req.headers.toList.exists { header =>
-      header._2.exists(invalidHeaderChars.contains)
+      header.renderedValue.exists(invalidHeaderChars.contains)
     }
 
     if (hasInvalidChar) {
