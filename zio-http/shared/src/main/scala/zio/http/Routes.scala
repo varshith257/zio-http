@@ -357,6 +357,9 @@ object Routes extends RoutesCompanionVersionSpecific {
     empty @@ Middleware.serveResources(path, resourcePrefix)
 
   private[http] final case class Tree[-Env](tree: RoutePattern.Tree[RequestHandler[Env, Response]]) { self =>
+
+    def getAllMethods(path: Path): Set[Method] = tree.getAllMethods(path)
+
     final def ++[Env1 <: Env](that: Tree[Env1]): Tree[Env1] =
       Tree(self.tree ++ that.tree)
 
@@ -370,7 +373,7 @@ object Routes extends RoutesCompanionVersionSpecific {
     final def get(method: Method, path: Path): Chunk[RequestHandler[Env, Response]] =
       tree.get(method, path)
   }
-  private[http] object Tree                                                                         {
+  private[http] object Tree {
     val empty: Tree[Any] = Tree(RoutePattern.Tree.empty)
 
     def fromRoutes[Env](routes: Chunk[zio.http.Route[Env, Response]])(implicit trace: Trace): Tree[Env] =
