@@ -252,7 +252,10 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
         val allowedMethods = tree.getAllMethods(req.path)
         chunk.length match {
           case 0 =>
-            if (!Method.knownMethods.contains(req.method)) {
+            if (allowedMethods.isEmpty) {
+              // Case 1: Path doesn't exist at all -> 404 Not Found
+              Handler.notFound
+            } else if (!Method.knownMethods.contains(req.method)) {
               Handler.status(Status.NotImplemented)
             } else if (!allowedMethods.contains(req.method) && allowedMethods.nonEmpty) {
               Handler.status(Status.MethodNotAllowed)
