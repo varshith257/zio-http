@@ -248,33 +248,35 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     val tree                  = self.tree
     Handler
       .fromFunctionHandler[Request] { req =>
-        val chunk = tree.get(req.method, req.path)
-        chunk.length match {
-          case 0 =>
-            val pathExists = Method.all.exists(method => tree.get(method, req.path).nonEmpty)
-            if (!pathExists) {
-              Handler.notFound
-            } else {
-              val allowedMethods = Method.all.filter(method => tree.get(method, req.path).nonEmpty)
-              Handler.succeed(
-                Response
-                  .status(Status.MethodNotAllowed)
-                  .addHeader(Header.Allow(NonEmptyChunk.fromIterable(allowedMethods.head, allowedMethods.tail))),
-              )
-            }
-          case 1 => chunk(0)
-          case n => // TODO: Support precomputed fallback among all chunk elements
-            var acc = chunk(0)
-            var i   = 1
-            while (i < n) {
-              val h = chunk(i)
-              acc = acc.catchAll { response =>
-                if (response.status == Status.NotFound) h
-                else Handler.fail(response)
+        if (chunk.isEmpty) {
+          val chunk          = tree.get(req.method, req.path)
+          val allowedMethods = tree.getAllMethods(req.path)
+          if (allowedMethods.nonEmpty) {
+            Handler.status(Status.MethodNotAllowed)
+          } else if (!Method.knownMethods.contains(req.method)) {
+            Handler.status(Status.NotImplemented)
+          } else {
+
+            Handler.notFound
+          }
+        } else {
+
+          chunk.length match {
+
+            case 1 => chunk(0)
+            case n => // TODO: Support precomputed fallback among all chunk elements
+              var acc = chunk(0)
+              var i   = 1
+              while (i < n) {
+                val h = chunk(i)
+                acc = acc.catchAll { response =>
+                  if (response.status == Status.NotFound) h
+                  else Handler.fail(response)
+                }
+                i += 1
               }
-              i += 1
-            }
-            acc
+              acc
+          }
         }
       }
       .merge
