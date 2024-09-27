@@ -251,6 +251,7 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
         validateHeaders(req).flatMap { _ =>
           val chunk          = tree.get(req.method, req.path)
           val allowedMethods = tree.getAllMethods(req.path)
+
           chunk.length match {
             case 0 =>
               if (!Method.knownMethods.contains(req.method)) {
@@ -300,7 +301,7 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     val invalidHeaderChars = Set('\r', '\n', '\u0000')
 
     // Check if any header contains invalid characters
-    val hasInvalidChar = req.headers.exists { case (_, value) =>
+    val hasInvalidChar = req.headers.headerValues.exists { value =>
       value.exists(invalidHeaderChars.contains)
     }
 
