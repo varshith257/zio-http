@@ -78,7 +78,7 @@ object Method {
 
   case object ANY extends Method { val name = "GET" }
 
-  val all: List[Method] = List(
+  val knownMethods: List[Method] = List(
     GET,
     POST,
     PUT,

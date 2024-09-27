@@ -276,23 +276,6 @@ jobs:
         id: push_codecov
         run: "bash <(curl -s https://codecov.io/bash)"
 
-  httpConformance:
-    name:  HTTP Spec Conformance Testing
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        scala: [2.13.14]
-        java: [temurin@8]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout current branch (full)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: Run HTTP Conformance Tests
-        run: sbt "testOnly zio.http.ConformanceSpec"
-
   Jmh_CachedDateHeaderBenchmark:
     name: Jmh CachedDateHeaderBenchmark
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
