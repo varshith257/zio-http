@@ -248,20 +248,19 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     val tree                  = self.tree
     Handler
       .fromFunctionHandler[Request] { req =>
-        val chunk = tree.get(req.method, req.path)
-        if (chunk.isEmpty) {
-          val allowedMethods = tree.getAllMethods(req.path)
-          if (!Method.knownMethods.contains(req.method)) {
-            Handler.status(Status.NotImplemented)
-          } else if (allowedMethods.nonEmpty && !allowedMethods.contains(req.method)) {
-            Handler.status(Status.MethodNotAllowed)
-          } else {
-            Handler.notFound
-          }
+        val allowedMethods = tree.getAllMethods(req.path)
+        if (allowedMethods.isEmpty) {
+          Handler.notFound
+        } else if (!knownMethods.contains(req.method)) {
+          Handler.status(Status.NotImplemented)
+
+        } else if (!allowedMethods.contains(req.method)) {
+          Handler.status(Status.MethodNotAllowed)
+
         } else {
-
+          val chunk = tree.get(req.method, req.path)
           chunk.length match {
-
+            case 0 => Handler.notFound
             case 1 => chunk(0)
             case n => // TODO: Support precomputed fallback among all chunk elements
               var acc = chunk(0)
@@ -276,6 +275,7 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
               }
               acc
           }
+
         }
       }
       .merge
