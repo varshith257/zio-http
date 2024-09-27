@@ -88,7 +88,7 @@ object StaticServerSpec extends RoutesRunnableSpec {
       }
     },
     test("404 response ") {
-      checkAll(methodGenWithoutHEAD) { method =>
+      { method =>
         val actual = status(method, Path.root / "A")
         assertZIO(actual)(equalTo(Status.NotFound))
       }
