@@ -248,30 +248,31 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     val tree                  = self.tree
     Handler
       .fromFunctionHandler[Request] { req =>
-        val chunk          = tree.get(req.method, req.path)
-        val allowedMethods = tree.getAllMethods(req.path)
-        chunk.length match {
-          case 0 =>
-            if (!Method.knownMethods.contains(req.method)) {
-              Handler.status(Status.NotImplemented)
-            } else if (!allowedMethods.contains(req.method) && allowedMethods.nonEmpty) {
-              Handler.status(Status.MethodNotAllowed)
-            } else { Handler.notFound }
-          case 1 => chunk(0)
-          case n => // TODO: Support precomputed fallback among all chunk elements
-            var acc = chunk(0)
-            var i   = 1
-            while (i < n) {
-              val h = chunk(i)
-              acc = acc.catchAll { response =>
-                if (response.status == Status.NotFound) h
-                else Handler.fail(response)
+        validateHeaders(req).flatMap { _ =>
+          val chunk          = tree.get(req.method, req.path)
+          val allowedMethods = tree.getAllMethods(req.path)
+          chunk.length match {
+            case 0 =>
+              if (!Method.knownMethods.contains(req.method)) {
+                Handler.status(Status.NotImplemented)
+              } else if (!allowedMethods.contains(req.method) && allowedMethods.nonEmpty) {
+                Handler.methodNotAllowed
+              } else { Handler.notFound }
+            case 1 => chunk(0)
+            case n => // TODO: Support precomputed fallback among all chunk elements
+              var acc = chunk(0)
+              var i   = 1
+              while (i < n) {
+                val h = chunk(i)
+                acc = acc.catchAll { response =>
+                  if (response.status == Status.NotFound) h
+                  else Handler.fail(response)
+                }
+                i += 1
               }
-              i += 1
-            }
-            acc
+              acc
+          }
         }
-
       }
       .merge
   }
@@ -294,6 +295,22 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     }
     _tree.asInstanceOf[Routes.Tree[Env]]
   }
+
+  private def validateHeaders(req: Request): Handler[Any, Response, Request, Response] = {
+    val invalidHeaderChars = Set('\r', '\n', '\u0000')
+
+    // Check if any header contains invalid characters
+    val hasInvalidChar = req.headers.exists { case (_, value) =>
+      value.exists(invalidHeaderChars.contains)
+    }
+
+    if (hasInvalidChar) {
+      Handler.badRequest
+    } else {
+      Handler.ok
+    }
+  }
+
 }
 
 object Routes extends RoutesCompanionVersionSpecific {
