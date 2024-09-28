@@ -300,9 +300,16 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
   private def validateHeaders(req: Request): Handler[Any, Response, Request, Response] = {
     val invalidHeaderChars = Set('\r', '\n', '\u0000')
 
+    ZIO.logInfo(s"Validating headers for request: ${req.headers}")
+
     // Check if any header contains invalid characters
     val hasInvalidChar = req.headers.toList.exists { header =>
-      header.renderedValue.exists(invalidHeaderChars.contains)
+      // header.renderedValue.exists(invalidHeaderChars.contains)
+      val hasInvalid = header.renderedValue.exists(invalidHeaderChars.contains)
+      if (hasInvalid) {
+        ZIO.logInfo(s"Invalid header found: ${header.name} -> ${header.renderedValue}")
+      }
+      hasInvalid
     }
 
     if (hasInvalidChar) {
