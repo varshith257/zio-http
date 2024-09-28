@@ -78,7 +78,7 @@ object Header {
       override def render(value: HeaderValue): String = value.value.toString
     }
 
-    def validate(headers: Headers): ZIO[Any, Response, Unit] = {
+    def validateHeaders(headers: Headers): ZIO[Any, Response, Unit] = {
       val invalidHeaderChars = Set('\r', '\n', '\u0000')
       val hasInvalidChar     = headers.toList.exists { header =>
         header.renderedValue.exists(invalidHeaderChars.contains)
