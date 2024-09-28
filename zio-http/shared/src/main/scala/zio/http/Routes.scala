@@ -335,7 +335,7 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
       Handler.status(Status.BadRequest)
     }
     // Case 2: Multiple Host headers
-    else if (hostHeaders.length > 1) {
+    else if (hostHeaders.size > 1) {
       Handler.status(Status.BadRequest)
     }
     // Case 3: Host header contains invalid characters
