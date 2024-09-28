@@ -50,19 +50,6 @@ sealed trait Header {
 
 object Header {
 
-  def validateHeaders(headers: Headers): ZIO[Any, Response, Unit] = {
-    val invalidHeaderChars = Set('\r', '\n', '\u0000')
-    val hasInvalidChar     = headers.toList.exists { header =>
-      header.renderedValue.exists(invalidHeaderChars.contains)
-    }
-
-    if (hasInvalidChar) {
-      ZIO.fail(Response.status(Status.BadRequest))
-    } else {
-      ZIO.unit
-    }
-  }
-  
   sealed trait HeaderType {
     type HeaderValue <: Header
 

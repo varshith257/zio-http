@@ -248,7 +248,7 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     val tree                  = self.tree
     Handler
       .fromFunctionHandler[Request] { req =>
-        Header.validateHeaders(req.headers) *> {
+        validateHostHeader(req).flatMap { _ =>
           val chunk          = tree.get(req.method, req.path)
           val allowedMethods = tree.getAllMethods(req.path)
 
@@ -320,6 +320,36 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
   //     Handler.ok
   //   }
   // }
+
+  private def validateHostHeader(req: Request): Handler[Any, Response, Request, Response] = {
+    // val invalidHostChars = Set('\r', '\n', '\u0000')
+    val validHostRegex = """^[a-zA-Z0-9.-]+$""".r // RFC-1123 valid host pattern
+
+    // Extract all the host headers
+    val hostHeaders = req.headers.collect {
+      case h if h.headerName.equalsIgnoreCase("Host") => h.renderedValue
+    }
+
+    // Case 1: No Host header
+    if (hostHeaders.isEmpty) {
+      Handler.status(Status.BadRequest)
+    }
+    // Case 2: Multiple Host headers
+    else if (hostHeaders.length > 1) {
+      Handler.status(Status.BadRequest)
+    }
+    // Case 3: Host header contains invalid characters
+    // else if (hostHeaders.exists(value => value.exists(invalidHostChars.contains))) {
+    //   Handler.status(Status.BadRequest)
+    // }
+    else if (!validHostRegex.matches(hostHeaders.head)) {
+      Handler.status(Status.BadRequest)
+    }
+    // Host header is valid
+    else {
+      Handler.ok
+    }
+  }
 
 }
 

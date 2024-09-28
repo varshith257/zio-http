@@ -19,9 +19,8 @@ object ConformanceSpec extends ZIOSpecDefault {
    * Stock, presented at the 19th ACM Asia Conference on Computer and
    * Communications Security (ASIA CCS) 2024.
    *
-   * Paper URL: https://doi.org/10.1145/3634737.3637678 
-   * GitHub Project: https://github.com/cispa/http-conformance
-   *
+   * Paper URL: https://doi.org/10.1145/3634737.3637678 GitHub Project:
+   * https://github.com/cispa/http-conformance
    */
 
   val validUrl = URL.decode("http://example.com").toOption.getOrElse(URL.root)
@@ -1160,15 +1159,15 @@ object ConformanceSpec extends ZIOSpecDefault {
                 .addHeader(Header.XFrameOptions.SameOrigin),
             ),
             // need test fail assertion something like this
-                //             request.headers.get(Header.IfModifiedSince.name) match {
-                //   case Some(_) =>
-                //     Response.status(Status.NotModified).addHeader(Header.ContentLength(14)).copy(body = Body.empty)
-                //   case None    =>
-                //     Response
-                //       .status(Status.Ok)
-                //       .addHeader(Header.ContentLength(14))
-                //       .copy(body = Body.fromString("<div>ABC</div>"))
-                // }
+            //             request.headers.get(Header.IfModifiedSince.name) match {
+            //   case Some(_) =>
+            //     Response.status(Status.NotModified).addHeader(Header.ContentLength(14)).copy(body = Body.empty)
+            //   case None    =>
+            //     Response
+            //       .status(Status.Ok)
+            //       .addHeader(Header.ContentLength(14))
+            //       .copy(body = Body.fromString("<div>ABC</div>"))
+            // }
           )
           for {
             response <- app.runZIO(Request.get("/test"))
