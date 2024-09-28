@@ -248,7 +248,7 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     val tree                  = self.tree
     Handler
       .fromFunctionHandler[Request] { req =>
-        validateHeaders(req).flatMap { _ =>
+        validateHeaders(req) *> {
           val chunk          = tree.get(req.method, req.path)
           val allowedMethods = tree.getAllMethods(req.path)
 
@@ -297,29 +297,29 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     _tree.asInstanceOf[Routes.Tree[Env]]
   }
 
-  private def validateHeaders(req: Request): Handler[Any, Response, Request, Response] = {
-    val invalidHeaderChars = Set('\r', '\n', '\u0000')
+  // private def validateHeaders(req: Request): Handler[Any, Response, Request, Response] = {
+  //   val invalidHeaderChars = Set('\r', '\n', '\u0000')
 
-    ZIO.logInfo(s"Validating headers for request: ${req.headers}")
+  //   ZIO.logInfo(s"Validating headers for request: ${req.headers}")
 
-    // Check if any header contains invalid characters
-    val hasInvalidChar = req.headers.toList.exists { header =>
-      // header.renderedValue.exists(invalidHeaderChars.contains)
-      val hasInvalid = header.renderedValue.exists(invalidHeaderChars.contains)
-      if (hasInvalid) {
-        ZIO.logInfo(s"Invalid header found: -> ${header.renderedValue}")
-        // Alternatively, you can escape the arrow like this:
-        // ZIO.logInfo(s"Invalid header found: -> ${header.renderedValue}")
-      }
-      hasInvalid
-    }
+  //   // Check if any header contains invalid characters
+  //   val hasInvalidChar = req.headers.toList.exists { header =>
+  //     // header.renderedValue.exists(invalidHeaderChars.contains)
+  //     val hasInvalid = header.renderedValue.exists(invalidHeaderChars.contains)
+  //     if (hasInvalid) {
+  //       ZIO.logInfo(s"Invalid header found: -> ${header.renderedValue}")
+  //       // Alternatively, you can escape the arrow like this:
+  //       // ZIO.logInfo(s"Invalid header found: -> ${header.renderedValue}")
+  //     }
+  //     hasInvalid
+  //   }
 
-    if (hasInvalidChar) {
-      Handler.badRequest
-    } else {
-      Handler.ok
-    }
-  }
+  //   if (hasInvalidChar) {
+  //     Handler.badRequest
+  //   } else {
+  //     Handler.ok
+  //   }
+  // }
 
 }
 

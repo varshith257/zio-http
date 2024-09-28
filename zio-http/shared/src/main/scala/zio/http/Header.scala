@@ -78,6 +78,19 @@ object Header {
       override def render(value: HeaderValue): String = value.value.toString
     }
 
+    def validate(headers: Headers): ZIO[Any, Response, Unit] = {
+      val invalidHeaderChars = Set('\r', '\n', '\u0000')
+      val hasInvalidChar     = headers.toList.exists { header =>
+        header.renderedValue.exists(invalidHeaderChars.contains)
+      }
+
+      if (hasInvalidChar) {
+        ZIO.fail(Response.status(Status.BadRequest))
+      } else {
+        ZIO.unit
+      }
+    }
+
     private[http] override def headerNameAsCharSequence: CharSequence    = customName
     private[http] override def renderedValueAsCharSequence: CharSequence = value
 

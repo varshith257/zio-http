@@ -1159,6 +1159,16 @@ object ConformanceSpec extends ZIOSpecDefault {
                 .addHeader(Header.XFrameOptions.Deny)
                 .addHeader(Header.XFrameOptions.SameOrigin),
             ),
+            // need test fail assertion something like this
+                //             request.headers.get(Header.IfModifiedSince.name) match {
+                //   case Some(_) =>
+                //     Response.status(Status.NotModified).addHeader(Header.ContentLength(14)).copy(body = Body.empty)
+                //   case None    =>
+                //     Response
+                //       .status(Status.Ok)
+                //       .addHeader(Header.ContentLength(14))
+                //       .copy(body = Body.fromString("<div>ABC</div>"))
+                // }
           )
           for {
             response <- app.runZIO(Request.get("/test"))
