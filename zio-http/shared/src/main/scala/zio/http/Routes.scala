@@ -307,7 +307,9 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
       // header.renderedValue.exists(invalidHeaderChars.contains)
       val hasInvalid = header.renderedValue.exists(invalidHeaderChars.contains)
       if (hasInvalid) {
-        ZIO.logInfo(s"Invalid header found: ${header.name} -> ${header.renderedValue}")
+        ZIO.logInfo(s"Invalid header found: -> ${header.renderedValue}")
+        // Alternatively, you can escape the arrow like this:
+        // ZIO.logInfo(s"Invalid header found: -> ${header.renderedValue}")
       }
       hasInvalid
     }
