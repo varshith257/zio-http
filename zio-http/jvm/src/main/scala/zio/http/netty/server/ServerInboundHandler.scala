@@ -87,12 +87,18 @@ private[zio] final case class ServerInboundHandler(
             )
             releaseRequest()
           } else {
-            val req  = makeZioRequest(ctx, jReq)
-            val exit = handler(req)
-            if (attemptImmediateWrite(ctx, req.method, exit)) {
+            val req = makeZioRequest(ctx, jReq)
+            if (!validateHostHeader(req)) {
+              // Return 400 Bad Request if Host validation fails
+              attemptFastWrite(ctx, req.method, Response.status(Status.BadRequest))
               releaseRequest()
             } else {
-              writeResponse(ctx, runtime, exit, req)(releaseRequest)
+              val exit = handler(req)
+              if (attemptImmediateWrite(ctx, req.method, exit)) {
+                releaseRequest()
+              } else {
+                writeResponse(ctx, runtime, exit, req)(releaseRequest)
+              }
             }
           }
         } finally {
@@ -106,6 +112,21 @@ private[zio] final case class ServerInboundHandler(
         throw new IllegalStateException(s"Unexpected message type: ${msg.getClass.getName}")
     }
 
+  }
+
+  private def validateHostHeader(req: Request): Boolean = {
+    var hostCount = 0
+    var validHost = true
+
+    req.headers.foreach { header =>
+      if (header.headerName.equalsIgnoreCase("Host")) {
+        hostCount += 1
+        if (hostCount > 1 ||! header.renderedValue.forall(c => c.isLetterOrDigit || c == '.' || c == '-')) {
+          validHost = false
+        }
+      }
+    }
+    hostCount == 1 && validHost
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit =
