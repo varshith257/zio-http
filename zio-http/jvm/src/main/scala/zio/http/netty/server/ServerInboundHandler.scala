@@ -121,7 +121,7 @@ private[zio] final case class ServerInboundHandler(
     req.headers.foreach { header =>
       if (header.headerName.equalsIgnoreCase("Host")) {
         hostCount += 1
-        if (hostCount > 1 ||! header.renderedValue.forall(c => c.isLetterOrDigit || c == '.' || c == '-')) {
+        if (hostCount > 1 || !header.renderedValue.forall(c => c.isLetterOrDigit || c == '.' || c == '-')) {
           validHost = false
         }
       }
