@@ -524,7 +524,7 @@ object ServerSpec extends RoutesRunnableSpec {
 
         val requestWithoutHost = Request.get("/test")
 
-        val res = app.deploy.run(requestWithoutHost).map(_.status)
+        val res = app.deploy.runZIO(requestWithoutHost).map(_.status)
         assertZIO(res)(equalTo(Status.BadRequest))
       } +
       test("should return 200 OK if Host header is present") {
@@ -532,7 +532,7 @@ object ServerSpec extends RoutesRunnableSpec {
         val app             = Routes(route)
         val requestWithHost = Request.get("/test").addHeader(Header.Host("localhost"))
 
-        val res = app.deploy.run(requestWithHost).map(_.status)
+        val res = app.deploy.runZIO(requestWithHost).map(_.status)
         assertZIO(res)(equalTo(Status.Ok))
       }
   }
