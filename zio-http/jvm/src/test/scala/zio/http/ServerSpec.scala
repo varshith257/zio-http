@@ -742,11 +742,11 @@ object ServerSpec extends RoutesRunnableSpec {
         val route = Method.GET / "test" -> Handler.ok
         val app   = Routes(route)
 
-        // Start the app using RoutesRunnableSpec, which triggers the entire server lifecycle
+        val requestWithoutHost = Request.get("/test")
+
         for {
-          port     <- serve(app)
-          response <- Client.request(Request.get(s"http://localhost:$port/test"))
-        } yield assertTrue(response.status == Status.BadRequest)
+          response <- app.deploy.status.run(requestWithoutHost)
+        } yield assertZIO(response)(equalTo(Status.BadRequest))
       } +
       test("should return 200 OK if Host header is present") {
         val route           = Method.GET / "test" -> Handler.ok
@@ -863,7 +863,6 @@ object ServerSpec extends RoutesRunnableSpec {
       DynamicServer.live,
       ZLayer.succeed(configApp),
       Server.customized,
-      ZLayer.succeed(NettyConfig.defaultWithFastShutdown),
       Client.default,
     ) @@ sequential @@ withLiveClock
 
