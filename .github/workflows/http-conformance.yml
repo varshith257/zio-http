@@ -74,7 +74,6 @@ jobs:
     #     run: |
 
     #       sed -i -e 's+(project in file("./zio-http"))+(project in file("./zio-http"))' build.sbt
-      - name: Compile
-        run: sbt clean compile
+
       - name: Run HTTP Conformance Tests
         run: sbt "project zioHttpJVM" "testOnly zio.http.ConformanceSpec"

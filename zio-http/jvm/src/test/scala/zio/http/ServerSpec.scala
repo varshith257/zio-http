@@ -522,17 +522,14 @@ object ServerSpec extends RoutesRunnableSpec {
         val route = Method.GET / "test" -> Handler.ok
         val app   = Routes(route)
 
-        val requestWithoutHost = Request.get("/test")
-
-        val res = app.deploy.runZIO(requestWithoutHost).map(_.status)
+        val res = app.deploy.status.run(path = Path.root / "test")
         assertZIO(res)(equalTo(Status.BadRequest))
       } +
       test("should return 200 OK if Host header is present") {
-        val route           = Method.GET / "test" -> Handler.ok
-        val app             = Routes(route)
-        val requestWithHost = Request.get("/test").addHeader(Header.Host("localhost"))
+        val route = Method.GET / "test" -> Handler.ok
+        val app   = Routes(route)
 
-        val res = app.deploy.runZIO(requestWithHost).map(_.status)
+        val res = app.deploy.status.run(path = Path.root / "test", headers = Headers(Header.Host("localhost")))
         assertZIO(res)(equalTo(Status.Ok))
       }
   }
