@@ -739,12 +739,13 @@ object ServerSpec extends RoutesRunnableSpec {
         } yield assertTrue(isValid)
       } +
       test("should return 400 Bad Request if Host header is missing") {
-        val route              = Method.GET / "test" -> Handler.ok
-        val app                = Routes(route)
-        val requestWithoutHost = Request.get("/test")
+        val route = Method.GET / "test" -> Handler.ok
+        val app   = Routes(route)
 
+        // Start the app using RoutesRunnableSpec, which triggers the entire server lifecycle
         for {
-          response <- app.runZIO(requestWithoutHost)
+          port     <- serve(app)
+          response <- Client.request(Request.get(s"http://localhost:$port/test"))
         } yield assertTrue(response.status == Status.BadRequest)
       } +
       test("should return 200 OK if Host header is present") {
