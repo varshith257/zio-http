@@ -89,7 +89,7 @@ private[zio] final case class ServerInboundHandler(
           } else {
             val req = makeZioRequest(ctx, jReq)
             if (!validateHostHeader(req)) {
-              // Return 400 Bad Request if Host validation fails
+              // Validation failed, return 400 Bad Request
               attemptFastWrite(ctx, req.method, Response.status(Status.BadRequest))
               releaseRequest()
             } else {
@@ -115,18 +115,15 @@ private[zio] final case class ServerInboundHandler(
   }
 
   private def validateHostHeader(req: Request): Boolean = {
-    var hostCount = 0
-    var validHost = true
-
-    req.headers.foreach { header =>
-      if (header.headerName.equalsIgnoreCase("Host")) {
-        hostCount += 1
-        if (hostCount > 1 || !header.renderedValue.forall(c => c.isLetterOrDigit || c == '.' || c == '-')) {
-          validHost = false
-        }
-      }
+    req.headers.get("Host") match {
+      case Some(host) =>
+        val isValid = host.forall(c => c.isLetterOrDigit || c == '.' || c == '-')
+        println(s"Host: $host, isValid: $isValid")
+        isValid
+      case None       =>
+        println("Host header missing!")
+        false
     }
-    hostCount == 1 && validHost
   }
 
   override def exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable): Unit =
