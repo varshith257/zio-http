@@ -121,10 +121,10 @@ private[zio] final case class ServerInboundHandler(
       val isValidHost = parts(0).forall(c => c.isLetterOrDigit || c == '.' || c == '-')
       val isValidPort = parts.length == 1 || (parts.length == 2 && parts(1).forall(_.isDigit)) // Allow port number
       val isValid = isValidHost && isValidPort
-      ZIO.logDebug(s"Host: $host, isValidHost: $isValidHost, isValidPort: $isValidPort, isValid: $isValid")
+      println(s"Host: $host, isValidHost: $isValidHost, isValidPort: $isValidPort, isValid: $isValid")
       isValid
     case None       =>
-      ZIO.logDebug("Host header missing!")
+      println("Host header missing!")
       false
   }
 }
