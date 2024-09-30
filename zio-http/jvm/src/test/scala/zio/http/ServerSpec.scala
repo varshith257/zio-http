@@ -519,17 +519,17 @@ object ServerSpec extends RoutesRunnableSpec {
         assertZIO(res)(isSome(anything))
       } +
       test("should return 400 Bad Request if Host header is missing") {
-        val route = Method.GET / "test" -> Handler.ok
-        val app   = route.toRoutes
+        val routes = Handler.ok.toRoutes // Same approach as ServerErrorSpec: a simple handler
 
-        val res = app.deploy.status.run(path = Path.root / "test")
+        // Check the status when Host header is missing
+        val res = routes.deploy.status.run(path = Path.root, headers = Headers.empty)
         assertZIO(res)(equalTo(Status.BadRequest))
       } +
       test("should return 200 OK if Host header is present") {
-        val route = Method.GET / "test" -> Handler.ok
-        val app   = route.toRoutes
+        val routes = Handler.ok.toRoutes
 
-        val res = app.deploy.status.run(path = Path.root / "test", headers = Headers(Header.Host("localhost")))
+        // Check the status when Host header is present
+        val res = routes.deploy.status.run(path = Path.root, headers = Headers(Header.Host("localhost")))
         assertZIO(res)(equalTo(Status.Ok))
       }
   }
@@ -543,7 +543,6 @@ object ServerSpec extends RoutesRunnableSpec {
       ZLayer.succeed(configApp),
       Server.customized,
       Client.default,
-      NettyConfig.default // Add this line to provide the NettyConfig layer
     ) @@ sequential @@ withLiveClock
 
 }
