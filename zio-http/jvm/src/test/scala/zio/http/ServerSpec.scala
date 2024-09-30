@@ -543,6 +543,7 @@ object ServerSpec extends RoutesRunnableSpec {
       ZLayer.succeed(configApp),
       Server.customized,
       Client.default,
+      ZLayer.succeed(NettyConfig.default),
     ) @@ sequential @@ withLiveClock
 
 }
