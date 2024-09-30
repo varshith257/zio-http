@@ -521,7 +521,7 @@ object ServerSpec extends RoutesRunnableSpec {
       test("should return 400 Bad Request if Host header is missing") {
         val routes = Handler.ok.toRoutes // Same approach as ServerErrorSpec: a simple handler
 
-        val res = routes.deploy.status.run(path = Path.root, headers = Headers(Header.Host("")))
+        val res = routes.deploy.status.run(path = Path.root, headers = Headers(Header.Host("invalid")))
         assertZIO(res)(equalTo(Status.BadRequest))
       } +
       test("should return 200 OK if Host header is present") {
