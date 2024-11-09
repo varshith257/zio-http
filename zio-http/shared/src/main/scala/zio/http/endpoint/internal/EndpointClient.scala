@@ -108,12 +108,12 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
       requests = invocations.map(invocation => encodeRequest(invocation, config, authInput))
 
       // Execute all requests concurrently and map errors to List[E]
-      responses           <- ZIO.foreachPar(requests) { request =>
+      responses <- ZIO.foreachPar(requests) { request =>
         client.request(request).mapError(error => List(error.asInstanceOf[E]))
       }
 
       // Decode each response and handle errors as Either[List[E], O]
-      results             <- ZIO.foreach(responses.zip(invocations)) { case (response, _) =>
+      results   <- ZIO.foreach(responses.zip(invocations)) { case (response, _) =>
         if (endpoint.output.matchesStatus(response.status)) {
           endpoint.output.decodeResponse(response).mapError(e => List(e)).map(Right(_))
         } else if (endpoint.error.matchesStatus(response.status)) {
@@ -124,8 +124,10 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
       }
 
       // Aggregate results
-      (errors, successes) <- ZIO.partition(results)
-
+      (errors, successes) = decodedResults.foldLeft((List.empty[E], List.empty[O])) {
+        case ((errs, succs), Left(err))  => (errs ++ err, succs)
+        case ((errs, succs), Right(suc)) => (errs, succs :+ suc)
+      }
       // Return either the list of successes or a failure with the list of errors
       result <- if (errors.isEmpty) ZIO.succeed(successes) else ZIO.fail(errors.flatten)
     } yield result
