@@ -107,12 +107,12 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
       config    <- CodecConfig.codecRef.get
       requests = invocations.map(invocation => encodeRequest(invocation, config, authInput))
 
-      // Execute all requests concurrently with appropriate error handling
+      // Execute all requests concurrently and handle failures
       responses           <- ZIO.foreachPar(requests) { request =>
         client.request(request).mapError(error => List(error.asInstanceOf[E]))
       }
 
-      // Decode each response and handle errors as Either[List[E], O]
+      // Decode responses and partition into errors and successes
       results             <- ZIO.foreach(responses.zip(invocations)) { case (response, _) =>
         if (endpoint.output.matchesStatus(response.status)) {
           endpoint.output.decodeResponse(response).mapError(e => List(e)).map(Right(_))
@@ -123,10 +123,10 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
         }
       }
 
-      // Separate errors and successes using partitionEither
-      (errors, successes) <- ZIO.partitionEither(results)
+      // Aggregate results
+      (errors, successes) <- ZIO.partition(results)(identity)
 
-      // Return either the list of successes or a failure with the list of errors
+      // Return either the successes or fail with the errors
       result <- if (errors.isEmpty) ZIO.succeed(successes) else ZIO.fail(errors.flatten)
     } yield result
   }
