@@ -123,8 +123,8 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
         }
       }
 
-      // Aggregate results using partitionEither
-      (errors, successes) <- ZIO.partitionEither(results)
+      // Aggregate results
+      (errors, successes) <- ZIO.partition(results)
 
       // Return either the list of successes or a failure with the list of errors
       result <- if (errors.isEmpty) ZIO.succeed(successes) else ZIO.fail(errors.flatten)
