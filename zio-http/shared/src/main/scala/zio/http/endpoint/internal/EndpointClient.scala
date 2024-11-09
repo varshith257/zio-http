@@ -87,7 +87,7 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
     combiner: Combiner[I, endpoint.authType.ClientRequirement],
     trace: Trace,
   ): ZIO[R with Scope, List[E], List[O]] = {
-    // Helper to encode each request
+
     def encodeRequest(
       invocation: Invocation[P, I, E, O, A],
       config: CodecConfig,
@@ -107,22 +107,25 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
       config    <- CodecConfig.codecRef.get
       requests = invocations.map(invocation => encodeRequest(invocation, config, authInput))
 
-      // Execute all requests concurrently
-      responses <- ZIO.foreachPar(requests)(client.request)
+      // Execute all requests concurrently and map errors to List[E]
+      responses <- ZIO.foreachPar(requests)(client.request.mapError(List(_)))
 
-      // Decode responses and match to expected outputs or errors
-      results <- ZIO.foreach(responses.zip(invocations)) { case (response, invocation) =>
-        if (endpoint.output.matchesStatus(response.status)) {
-          endpoint.output.decodeResponse(response).orDie
-        } else if (endpoint.error.matchesStatus(response.status)) {
-          endpoint.error.decodeResponse(response).orDie.flip
-        } else {
-          val error = endpoint.codecError.decodeResponse(response)
-          error.flatMap(codecError => ZIO.die(codecError))
+      // Decode each response and handle errors as List[E]
+      results <- ZIO
+        .foreach(responses.zip(invocations)) { case (response, invocation) =>
+          if (endpoint.output.matchesStatus(response.status)) {
+            endpoint.output.decodeResponse(response).mapError(List(_))
+          } else if (endpoint.error.matchesStatus(response.status)) {
+            endpoint.error.decodeResponse(response).mapError(List(_)).flip
+          } else {
+            val error = endpoint.codecError.decodeResponse(response)
+            error.flatMap(codecError => ZIO.die(codecError))
+          }
         }
-      }
+        .absolve
     } yield results
   }
+
 }
 
 object EndpointClient {

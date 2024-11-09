@@ -96,22 +96,20 @@ final case class EndpointExecutor[R, Auth](
     ev: Auth <:< invocations.head.endpoint.authType.ClientRequirement,
     trace: Trace,
   ): ZIO[R with Scope, List[E], List[B]] = {
-    // Fetch the EndpointClient for each invocation's endpoint
-    ZIO
-      .foreach(invocations) { invocation =>
-        getClient(invocation.endpoint).orDie
-      }
-      .flatMap { endpointClients =>
-        endpointClients.headOption match {
-          case Some(endpointClient) =>
-            endpointClient.batchedExecute(
-              client,
-              invocations,
-              authProvider.asInstanceOf[URIO[R, endpointClient.endpoint.authType.ClientRequirement]],
-            )
-          case None                 => ZIO.succeed(List.empty[B])
-        }
-      }
+    invocations.headOption match {
+      case Some(firstInvocation) =>
+        for {
+          endpointClient <- getClient(firstInvocation.endpoint).orDie
+          results        <- endpointClient.batchedExecute(
+            client,
+            invocations,
+            authProvider.asInstanceOf[URIO[R, endpointClient.endpoint.authType.ClientRequirement]],
+          )
+        } yield results
+
+      case None =>
+        ZIO.succeed(List.empty[B])
+    }
   }
 }
 object EndpointExecutor {
