@@ -138,9 +138,9 @@ sealed trait HttpContentCodec[A] { self =>
 
   private[http] def chooseFirstOrDefault(
     mediaTypes: Chunk[MediaTypeWithQFactor],
-  ): Either[UnsupportedMediaTypeError, (MediaType, BinaryCodecWithSchema[A])] =
+  ): (MediaType, BinaryCodecWithSchema[A]) =
     if (mediaTypes.isEmpty) {
-      Right((defaultMediaType, defaultBinaryCodecWithSchema))
+      (defaultMediaType, defaultBinaryCodecWithSchema)
     } else {
       var i                                             = 0
       var result: (MediaType, BinaryCodecWithSchema[A]) = null
@@ -150,8 +150,8 @@ sealed trait HttpContentCodec[A] { self =>
         if (lookupResult.isDefined) result = lookupResult.get
         i += 1
       }
-      if (result == null) Left(UnsupportedMediaTypeError(mediaTypes.map(_.mediaType).mkString(", ")))
-      else Right(result)
+      if (result == null) (defaultMediaType, defaultBinaryCodecWithSchema)
+      else result
     }
 
   def lookup(mediaType: MediaType): Option[(MediaType, BinaryCodecWithSchema[A])]
