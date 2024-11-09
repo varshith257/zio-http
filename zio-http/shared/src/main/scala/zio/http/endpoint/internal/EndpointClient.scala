@@ -92,7 +92,7 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
       invocation: Invocation[P, I, E, O, A],
       config: CodecConfig,
       authInput: endpoint.authType.ClientRequirement,
-    ) = {
+    ): Request = {
       val input = if (authInput.isInstanceOf[Unit]) invocation.input else combiner.combine(invocation.input, authInput)
       val req0  = endpoint
         .authedInput(combiner)
@@ -108,7 +108,7 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
       requests = invocations.map(invocation => encodeRequest(invocation, config, authInput))
 
       // Execute all requests concurrently and map errors to List[E]
-      responses <- ZIO.foreachPar(requests)(client.request.mapError(List(_)))
+      responses <- ZIO.foreachPar(requests)(request => client.request(request).mapError(List(_)))
 
       // Decode each response and handle errors as List[E]
       results <- ZIO
@@ -125,7 +125,6 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
         .absolve
     } yield results
   }
-
 }
 
 object EndpointClient {

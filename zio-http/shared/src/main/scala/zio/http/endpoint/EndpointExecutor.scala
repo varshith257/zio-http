@@ -92,10 +92,11 @@ final case class EndpointExecutor[R, Auth](
   def batchedApply[P, I, E, B, AuthT <: AuthType](
     invocations: List[Invocation[P, I, E, B, AuthT]],
   )(implicit
-    combiner: Combiner[I, invocations.head.endpoint.authType.ClientRequirement],
-    ev: Auth <:< invocations.head.endpoint.authType.ClientRequirement,
+    combiner: Combiner[I, AuthT#ClientRequirement],
+    ev: Auth <:< AuthT#ClientRequirement,
     trace: Trace,
   ): ZIO[R with Scope, List[E], List[B]] = {
+
     invocations.headOption match {
       case Some(firstInvocation) =>
         for {
