@@ -78,6 +78,51 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
       }
     }
   }
+
+  def batchedExecute[R](
+    client: Client,
+    invocations: List[Invocation[P, I, E, O, A]],
+    authProvider: URIO[R, endpoint.authType.ClientRequirement],
+  )(implicit
+    combiner: Combiner[I, endpoint.authType.ClientRequirement],
+    trace: Trace,
+  ): ZIO[R with Scope, List[E], List[O]] = {
+    // Helper to encode each request
+    def encodeRequest(
+      invocation: Invocation[P, I, E, O, A],
+      config: CodecConfig,
+      authInput: endpoint.authType.ClientRequirement,
+    ) = {
+      val input = if (authInput.isInstanceOf[Unit]) invocation.input else combiner.combine(invocation.input, authInput)
+      val req0  = endpoint
+        .authedInput(combiner)
+        .asInstanceOf[HttpCodec[HttpCodecType.RequestType, Any]]
+        .encodeRequest(input, config)
+
+      req0.copy(url = endpointRoot ++ req0.url)
+    }
+
+    for {
+      authInput <- authProvider
+      config    <- CodecConfig.codecRef.get
+      requests = invocations.map(invocation => encodeRequest(invocation, config, authInput))
+
+      // Execute all requests concurrently
+      responses <- ZIO.foreachPar(requests)(client.request)
+
+      // Decode responses and match to expected outputs or errors
+      results <- ZIO.foreach(responses.zip(invocations)) { case (response, invocation) =>
+        if (endpoint.output.matchesStatus(response.status)) {
+          endpoint.output.decodeResponse(response).orDie
+        } else if (endpoint.error.matchesStatus(response.status)) {
+          endpoint.error.decodeResponse(response).orDie.flip
+        } else {
+          val error = endpoint.codecError.decodeResponse(response)
+          error.flatMap(codecError => ZIO.die(codecError))
+        }
+      }
+    } yield results
+  }
 }
 
 object EndpointClient {
