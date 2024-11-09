@@ -107,24 +107,31 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
       config    <- CodecConfig.codecRef.get
       requests = invocations.map(invocation => encodeRequest(invocation, config, authInput))
 
-      // Execute all requests concurrently and map errors to List[E]
-      responses <- ZIO.foreachPar(requests)(request => client.request(request).mapError(List(_)))
+      // Execute all requests concurrently with appropriate error handling
+      responses  <- ZIO.foreachPar(requests) { request =>
+        client.request(request).mapError(error => List(error.asInstanceOf[E]))
+      }
 
-      // Decode each response and handle errors as List[E]
-      results <- ZIO
-        .foreach(responses.zip(invocations)) { case (response, invocation) =>
-          if (endpoint.output.matchesStatus(response.status)) {
-            endpoint.output.decodeResponse(response).mapError(List(_))
-          } else if (endpoint.error.matchesStatus(response.status)) {
-            endpoint.error.decodeResponse(response).mapError(List(_)).flip
-          } else {
-            val error = endpoint.codecError.decodeResponse(response)
-            error.flatMap(codecError => ZIO.die(codecError))
-          }
+      // Decode each response and handle errors as Either[List[E], O]
+      results    <- ZIO.foreach(responses.zip(invocations)) { case (response, invocation) =>
+        if (endpoint.output.matchesStatus(response.status)) {
+          endpoint.output.decodeResponse(response).mapError(e => List(e)).map(Right(_))
+        } else if (endpoint.error.matchesStatus(response.status)) {
+          endpoint.error.decodeResponse(response).mapError(e => List(e)).flip.map(Left(_))
+        } else {
+          ZIO.die(new IllegalStateException(s"Unexpected status: ${response.status}"))
         }
-        .absolve
-    } yield results
+      }
+
+      // Aggregate results, collecting all successes and errors separately
+      aggregated <- ZIO.partitionEither(results)
+      (errors, successes) = aggregated
+
+      // Return either the list of successes or a failure with the list of errors
+      result <- if (errors.isEmpty) ZIO.succeed(successes) else ZIO.fail(errors.flatten)
+    } yield result
   }
+
 }
 
 object EndpointClient {
