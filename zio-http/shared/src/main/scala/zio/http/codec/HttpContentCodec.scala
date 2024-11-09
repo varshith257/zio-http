@@ -28,21 +28,27 @@ sealed trait HttpContentCodec[A] { self =>
     HttpContentCodec.Choices(choices ++ that.choices)
 
   def decodeRequest(request: Request, config: CodecConfig): Task[A] = {
-    ErrorResponseConfig.configRef.get.flatMap { config =>
-      val contentType = mediaTypeFromContentTypeHeader(request)
-      lookup(contentType) match {
-        case Some((_, codec)) =>
-          request.body.asChunk.flatMap { bytes =>
-            ZIO
-              .fromEither(codec.codec(config).decode(bytes))
-              .mapError(_ => CodecDecodeError(s"Failed to decode request body for media type: $contentType"))
-              .tapError(error => if (config.logCodecErrors) ZIO.logWarning(error.getMessage) else ZIO.unit)
-          }
-        case None             =>
+    val contentType = mediaTypeFromContentTypeHeader(request)
+    lookup(contentType) match {
+      case Some((_, codec)) =>
+        request.body.asChunk.flatMap { bytes =>
           ZIO
-            .fail(UnsupportedMediaTypeError(contentType))
-            .tapError(error => if (config.logCodecErrors) ZIO.logWarning(error.getMessage) else ZIO.unit)
-      }
+            .fromEither(codec.codec(config).decode(bytes))
+            .mapError(_ => CodecDecodeError(s"Failed to decode request body for media type: $contentType"))
+            .tapError(error =>
+              ErrorResponseConfig.configRef.get.flatMap { errConfig =>
+                if (errConfig.logCodecErrors) ZIO.logWarning(error.getMessage) else ZIO.unit
+              },
+            )
+        }
+      case None             =>
+        ZIO
+          .fail(UnsupportedMediaTypeError(contentType))
+          .tapError(error =>
+            ErrorResponseConfig.configRef.get.flatMap { errConfig =>
+              if (errConfig.logCodecErrors) ZIO.logWarning(error.getMessage) else ZIO.unit
+            },
+          )
     }
   }
 
@@ -50,21 +56,27 @@ sealed trait HttpContentCodec[A] { self =>
     CodecConfig.codecRef.getWith(decodeRequest(request, _))
 
   def decodeResponse(response: Response, config: CodecConfig): Task[A] = {
-    ErrorResponseConfig.configRef.get.flatMap { config =>
-      val contentType = mediaTypeFromContentTypeHeader(response)
-      lookup(contentType) match {
-        case Some((_, codec)) =>
-          response.body.asChunk.flatMap { bytes =>
-            ZIO
-              .fromEither(codec.codec(config).decode(bytes))
-              .mapError(_ => CodecDecodeError(s"Failed to decode response body for media type: $contentType"))
-              .tapError(error => if (config.logCodecErrors) ZIO.logWarning(error.getMessage) else ZIO.unit)
-          }
-        case None             =>
+    val contentType = mediaTypeFromContentTypeHeader(response)
+    lookup(contentType) match {
+      case Some((_, codec)) =>
+        response.body.asChunk.flatMap { bytes =>
           ZIO
-            .fail(UnsupportedMediaTypeError(contentType))
-            .tapError(error => if (config.logCodecErrors) ZIO.logWarning(error.getMessage) else ZIO.unit)
-      }
+            .fromEither(codec.codec(config).decode(bytes))
+            .mapError(_ => CodecDecodeError(s"Failed to decode response body for media type: $contentType"))
+            .tapError(error =>
+              ErrorResponseConfig.configRef.get.flatMap { errConfig =>
+                if (errConfig.logCodecErrors) ZIO.logWarning(error.getMessage) else ZIO.unit
+              },
+            )
+        }
+      case None             =>
+        ZIO
+          .fail(UnsupportedMediaTypeError(contentType))
+          .tapError(error =>
+            ErrorResponseConfig.configRef.get.flatMap { errConfig =>
+              if (errConfig.logCodecErrors) ZIO.logWarning(error.getMessage) else ZIO.unit
+            },
+          )
     }
   }
 
