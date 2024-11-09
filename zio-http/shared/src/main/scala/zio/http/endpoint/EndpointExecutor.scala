@@ -88,6 +88,30 @@ final case class EndpointExecutor[R, Auth](
       )
     }
   }
+
+  def batchedApply[P, I, E, B, AuthT <: AuthType](
+    invocations: List[Invocation[P, I, E, B, AuthT]],
+  )(implicit
+    combiner: Combiner[I, AuthT#ClientRequirement],
+    ev: Auth <:< AuthT#ClientRequirement,
+    trace: Trace,
+  ): ZIO[R with Scope, List[E], List[B]] = {
+
+    invocations.headOption match {
+      case Some(firstInvocation) =>
+        for {
+          endpointClient <- getClient(firstInvocation.endpoint).orDie
+          results        <- endpointClient.batchedExecute(
+            client,
+            invocations,
+            authProvider.asInstanceOf[URIO[R, endpointClient.endpoint.authType.ClientRequirement]],
+          )
+        } yield results
+
+      case None =>
+        ZIO.succeed(List.empty[B])
+    }
+  }
 }
 object EndpointExecutor {
   def apply(client: Client, locator: EndpointLocator): EndpointExecutor[Any, Unit] =
