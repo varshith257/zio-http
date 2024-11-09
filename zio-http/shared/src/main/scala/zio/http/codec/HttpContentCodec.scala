@@ -150,8 +150,10 @@ sealed trait HttpContentCodec[A] { self =>
         if (lookupResult.isDefined) result = lookupResult.get
         i += 1
       }
-      if (result == null) Right((defaultMediaType, defaultBinaryCodecWithSchema))
-      else Right(result)
+      if (result == null) {
+        ZIO.logWarning(s"Unsupported media type: ${mediaTypes.head.mediaType}")
+        Right((defaultMediaType, defaultBinaryCodecWithSchema))
+      } else Right(result)
     }
 
   def lookup(mediaType: MediaType): Option[(MediaType, BinaryCodecWithSchema[A])]
