@@ -23,7 +23,34 @@ final case class ErrorResponseConfig(
   maxStackTraceDepth: Int = 10,
   errorFormat: ErrorResponseConfig.ErrorFormat = ErrorResponseConfig.ErrorFormat.Html,
   logCodecErrors: Boolean = false,
-)
+){
+
+  /**
+   * Backward-compatible copy method for compatibility with older code.
+   *
+   * Omits the new `logCodecErrors` parameter, which defaults to `false` in
+   * older usage scenarios.
+   */
+  def copy(
+    withErrorBody: Boolean = this.withErrorBody,
+    withStackTrace: Boolean = this.withStackTrace,
+    maxStackTraceDepth: Int = this.maxStackTraceDepth,
+    errorFormat: ErrorResponseConfig.ErrorFormat = this.errorFormat,
+  ): ErrorResponseConfig =
+    new ErrorResponseConfig(withErrorBody, withStackTrace, maxStackTraceDepth, errorFormat, logCodecErrors)
+
+  /**
+   * Full copy method including all parameters.
+   */
+  def copyWithLog(
+    withErrorBody: Boolean = this.withErrorBody,
+    withStackTrace: Boolean = this.withStackTrace,
+    maxStackTraceDepth: Int = this.maxStackTraceDepth,
+    errorFormat: ErrorResponseConfig.ErrorFormat = this.errorFormat,
+    logCodecErrors: Boolean = this.logCodecErrors,
+  ): ErrorResponseConfig =
+    new ErrorResponseConfig(withErrorBody, withStackTrace, maxStackTraceDepth, errorFormat, logCodecErrors)
+}
 
 object ErrorResponseConfig {
   sealed trait ErrorFormat { val mediaType: MediaType }
