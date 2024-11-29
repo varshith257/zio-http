@@ -26,6 +26,7 @@ import zio.test._
 
 import zio.stream.{ZPipeline, ZStream}
 
+import zio.http._
 import zio.http.internal.{DynamicServer, HttpGen, RoutesRunnableSpec}
 import zio.http.netty.NettyConfig
 import zio.http.template.{body, div, id}
@@ -516,6 +517,18 @@ object ServerSpec extends RoutesRunnableSpec {
       test("header is set") {
         val res = routes.deploy.headers.run().map(_.header(Header.ContentLength))
         assertZIO(res)(isSome(anything))
+      } +
+      test("should return 400 Bad Request if Host header is missing") {
+        val routes = Handler.ok.toRoutes // Same approach as ServerErrorSpec: a simple handler
+
+        val res = routes.deploy.status.run(path = Path.root, headers = Headers(Header.Host("invalid")))
+        assertZIO(res)(equalTo(Status.BadRequest))
+      } +
+      test("should return 200 OK if Host header is present") {
+        val routes = Handler.ok.toRoutes
+
+        val res = routes.deploy.status.run(path = Path.root, headers = Headers(Header.Host("localhost")))
+        assertZIO(res)(equalTo(Status.Ok))
       }
   }
 
@@ -527,8 +540,8 @@ object ServerSpec extends RoutesRunnableSpec {
       DynamicServer.live,
       ZLayer.succeed(configApp),
       Server.customized,
-      ZLayer.succeed(NettyConfig.defaultWithFastShutdown),
       Client.default,
+      ZLayer.succeed(NettyConfig.default),
     ) @@ sequential @@ withLiveClock
 
 }
