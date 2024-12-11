@@ -248,6 +248,8 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     val tree                  = self.tree
     Handler
       .fromFunctionHandler[Request] { req =>
+        println(s"[DEBUG] Incoming request: Method = ${req.method}, Path = ${req.path}")
+
         val chunk          = tree.get(req.method, req.path)
         def allowedMethods = tree.getAllMethods(req.path)
         req.method match {
