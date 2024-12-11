@@ -249,39 +249,39 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
     Handler
       .fromFunctionHandler[Request] { req =>
         val chunk          = tree.get(req.method, req.path)
-        val allowedMethods = tree.getAllMethods(req.path)
-
+        def allowedMethods = tree.getAllMethods(req.path)
         req.method match {
-          case Method.CUSTOM(_)                              =>
-            Handler.fromZIO(ZIO.succeed(Response.status(Status.NotImplemented)))
-          case _ if chunk.isEmpty && allowedMethods.nonEmpty =>
-            Handler.fromZIO(ZIO.succeed(Response.status(Status.MethodNotAllowed)))
-
-          case _ if chunk.isEmpty && allowedMethods.isEmpty =>
-            Handler.notFound
-          case _                                            =>
-            chunk.length match {
-              // case 0 =>
-              //   if (!Method.knownMethods.contains(req.method)) {
-              //     Handler.status(Status.NotImplemented)
-              //   } else if (!allowedMethods.contains(req.method) && allowedMethods.nonEmpty) {
-              //     Handler.methodNotAllowed
-              //   } else { Handler.notFound }
-              case 1 => chunk(0)
-              case n => // TODO: Support precomputed fallback among all chunk elements
-                var acc = chunk(0)
-                var i   = 1
-                while (i < n) {
-                  val h = chunk(i)
-                  acc = acc.catchAll { response =>
-                    if (response.status == Status.NotFound) h
-                    else Handler.fail(response)
+          case Method.CUSTOM(_) =>
+            Handler.notImplemented
+          case _                =>
+            if (chunk.isEmpty) {
+              if (allowedMethods.isEmpty || allowedMethods == Set(Method.OPTIONS)) {
+                // If no methods are allowed for the path, return 404 Not Found
+                Handler.notFound
+              } else {
+                // If there are allowed methods for the path but none match the request method, return 405 Method Not Allowed
+                val allowHeader = Header.Allow(NonEmptyChunk.fromIterableOption(allowedMethods).get)
+                Handler.methodNotAllowed.addHeader(allowHeader)
+              }
+            } else {
+              chunk.length match {
+                case 1 => chunk(0)
+                case n => // TODO: Support precomputed fallback among all chunk elements
+                  var acc = chunk(0)
+                  var i   = 1
+                  while (i < n) {
+                    val h = chunk(i)
+                    acc = acc.catchAll { response =>
+                      if (response.status == Status.NotFound) h
+                      else Handler.fail(response)
+                    }
+                    i += 1
                   }
-                  i += 1
-                }
-                acc
+                  acc
+              }
             }
         }
+
       }
       .merge
   }
@@ -303,60 +303,6 @@ final case class Routes[-Env, +Err](routes: Chunk[zio.http.Route[Env, Err]]) { s
       _tree = Routes.Tree.fromRoutes(routes.asInstanceOf[Chunk[Route[Env, Response]]])
     }
     _tree.asInstanceOf[Routes.Tree[Env]]
-  }
-
-  // private def validateHeaders(req: Request): Handler[Any, Response, Request, Response] = {
-  //   val invalidHeaderChars = Set('\r', '\n', '\u0000')
-
-  //   ZIO.logInfo(s"Validating headers for request: ${req.headers}")
-
-  //   // Check if any header contains invalid characters
-  //   val hasInvalidChar = req.headers.toList.exists { header =>
-  //     // header.renderedValue.exists(invalidHeaderChars.contains)
-  //     val hasInvalid = header.renderedValue.exists(invalidHeaderChars.contains)
-  //     if (hasInvalid) {
-  //       ZIO.logInfo(s"Invalid header found: -> ${header.renderedValue}")
-  //       // Alternatively, you can escape the arrow like this:
-  //       // ZIO.logInfo(s"Invalid header found: -> ${header.renderedValue}")
-  //     }
-  //     hasInvalid
-  //   }
-
-  //   if (hasInvalidChar) {
-  //     Handler.badRequest
-  //   } else {
-  //     Handler.ok
-  //   }
-  // }
-
-  private def validateHostHeader(req: Request): Handler[Any, Response, Request, Response] = {
-    // val invalidHostChars = Set('\r', '\n', '\u0000')
-    val validHostRegex = """^[a-zA-Z0-9.-]+$""".r // RFC-1123 valid host pattern
-
-    // Extract all the host headers
-    val hostHeaders = req.headers.collect {
-      case h if h.headerName.equalsIgnoreCase("Host") => h.renderedValue
-    }
-
-    // Case 1: No Host header
-    if (hostHeaders.isEmpty) {
-      Handler.status(Status.BadRequest)
-    }
-    // Case 2: Multiple Host headers
-    else if (hostHeaders.size > 1) {
-      Handler.status(Status.BadRequest)
-    }
-    // Case 3: Host header contains invalid characters
-    // else if (hostHeaders.exists(value => value.exists(invalidHostChars.contains))) {
-    //   Handler.status(Status.BadRequest)
-    // }
-    else if (!validHostRegex.matches(hostHeaders.head)) {
-      Handler.status(Status.BadRequest)
-    }
-    // Host header is valid
-    else {
-      Handler.ok
-    }
   }
 
 }
