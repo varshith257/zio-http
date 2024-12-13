@@ -78,7 +78,8 @@ jobs:
           cache: sbt
 
       - uses: coursier/setup-action@v1
-
+      - name: Setup sbt
+        uses: sbt/setup-sbt@v1
       - name: Check formatting
         if: matrix.scala == '2.13.14'
         run: sbt ++2.13.14 fmtCheck
