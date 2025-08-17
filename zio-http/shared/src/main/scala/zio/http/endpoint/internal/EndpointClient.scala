@@ -78,6 +78,60 @@ private[endpoint] final case class EndpointClient[P, I, E, O, A <: AuthType](
       }
     }
   }
+
+  def batchedExecute[R](
+    client: Client,
+    invocations: List[Invocation[P, I, E, O, A]],
+    authProvider: URIO[R, endpoint.authType.ClientRequirement],
+  )(implicit
+    combiner: Combiner[I, endpoint.authType.ClientRequirement],
+    trace: Trace,
+  ): ZIO[R with Scope, List[E], List[O]] = {
+
+    def encodeRequest(
+      invocation: Invocation[P, I, E, O, A],
+      config: CodecConfig,
+      authInput: endpoint.authType.ClientRequirement,
+    ): Request = {
+      val input = if (authInput.isInstanceOf[Unit]) invocation.input else combiner.combine(invocation.input, authInput)
+      val req0  = endpoint
+        .authedInput(combiner)
+        .asInstanceOf[HttpCodec[HttpCodecType.RequestType, Any]]
+        .encodeRequest(input, config)
+
+      req0.copy(url = endpointRoot ++ req0.url)
+    }
+
+    for {
+      authInput <- authProvider
+      config    <- CodecConfig.codecRef.get
+      requests = invocations.map(invocation => encodeRequest(invocation, config, authInput))
+
+      // Execute all requests concurrently and map errors to List[E]
+      responses <- ZIO.foreachPar(requests) { request =>
+        client.request(request).mapError(error => List(error.asInstanceOf[E]))
+      }
+
+      // Decode each response and handle errors as Either[List[E], O]
+      results   <- ZIO.foreach(responses.zip(invocations)) { case (response, _) =>
+        if (endpoint.output.matchesStatus(response.status)) {
+          endpoint.output.decodeResponse(response).mapError(e => List(e)).map(Right(_))
+        } else if (endpoint.error.matchesStatus(response.status)) {
+          endpoint.error.decodeResponse(response).mapError(e => List(e)).flip.map(Left(_))
+        } else {
+          ZIO.die(new IllegalStateException(s"Unexpected status: ${response.status}"))
+        }
+      }
+
+      // Aggregate results
+      (errors, successes) = decodedResults.foldLeft((List.empty[E], List.empty[O])) {
+        case ((errs, succs), Left(err))  => (errs ++ err, succs)
+        case ((errs, succs), Right(suc)) => (errs, succs :+ suc)
+      }
+      // Return either the list of successes or a failure with the list of errors
+      result <- if (errors.isEmpty) ZIO.succeed(successes) else ZIO.fail(errors.flatten)
+    } yield result
+  }
 }
 
 object EndpointClient {
